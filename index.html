@@ -23,7 +23,7 @@ th{background:#fafafa}
 </style>
 <body>
 <h1>Instagram Insights</h1>
-<p class="small">Window: <b>June 15, 2025</b> — <b>September 12, 2025</b>. Data aggregated on server, interactive range below is computed client-side from history.</p>
+<p class="small">Window: <b>June 16, 2025</b> — <b>September 13, 2025</b>. Data aggregated on server, interactive range below is computed client-side from history.</p>
 
 <div class="card">
   <h2>Date range</h2>
@@ -349,8 +349,8 @@ loadData().then(({daily,follow,surf,inter,totalsLast,followLast,surfaceLast})=>{
   G.daily=daily; G.follow=follow; G.surf=surf; G.inter=inter;
   G.totalsLast=totalsLast; G.followLast=followLast; G.surfaceLast=surfaceLast;
   const rng = defaultRange(G.daily);
-  const from = rng.from || "2025-06-15";
-  const to   = rng.to   || "2025-09-12";
+  const from = rng.from || "2025-06-16";
+  const to   = rng.to   || "2025-09-13";
   document.getElementById("dFrom").value = from;
   document.getElementById("dTo").value   = to;
   render();
