@@ -1,84 +1,317 @@
 <!doctype html><meta charset="utf-8">
-<title>Instagram: отчёт (последние 28 дней)</title>
+<title>Instagram Insights — Report</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
 <style>
-body{font:15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:40px auto;max-width:980px;color:#111}
+body{font:15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:28px auto;max-width:1100px;color:#111}
 h1,h2{line-height:1.25;margin:0 0 10px}
 .card{border:1px solid #e5e7eb;border-radius:14px;padding:16px;margin:14px 0}
-.kpi{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:12px}
+.kpi{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:12px}
 .kpi .box{border:1px solid #e5e7eb;border-radius:12px;padding:12px}
+.tabs{display:flex;gap:8px;margin:14px 0}
+.tab{padding:8px 12px;border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;background:#fafafa}
+.tab.active{background:white;border-bottom-color:white;box-shadow:0 2px 0 0 white}
+.hidden{display:none}
 table{border-collapse:collapse;width:100%}
 th,td{border:1px solid #eee;padding:8px;text-align:left}
 th{background:#fafafa}
 .mono{font-variant-numeric:tabular-nums}
 .small{color:#555;font-size:13px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:760px){.kpi,.grid2{grid-template-columns:1fr}}
+@media(max-width:900px){.kpi{grid-template-columns:1fr 1fr} .grid2{grid-template-columns:1fr}}
+.badge{display:inline-block;padding:2px 8px;border:1px solid #e5e7eb;border-radius:999px;font-size:12px;background:#fff}
 </style>
 <body>
-<h1>Instagram — автоотчёт</h1>
-<p class="small">Окно: <b>18 августа 2025</b> — <b>14 сентября 2025</b></p>
+<h1>Instagram Insights</h1>
+<p class="small">Window: <b>June 16, 2025</b> — <b>September 13, 2025</b>. Data aggregated on server, interactive range below is computed client-side from history.</p>
 
-<div class="kpi">
-  <div class="box"><b>Просмотры (views)</b><div class="mono">252</div></div>
-  <div class="box"><b>Охват (reach)</b><div class="mono">44</div></div>
-  <div class="box"><b>Посещения профиля</b><div class="mono">17</div></div>
-  <div class="box">
-    <b>CTR профиля (сайт/ссылки → из визитов)</b>
-    <div class="mono">0.0%</div>
-    <div class="small">website_clicks=0, profile_links_taps=0</div>
+<div class="card">
+  <h2>Date range</h2>
+  <form id="rng" class="grid2" onsubmit="evApply(event)">
+    <div><label>From</label><br><input id="dFrom" type="date"></div>
+    <div><label>To</label><br><input id="dTo" type="date"></div>
+    <div><button id="btnApply" class="tab" type="submit">Submit</button></div>
+  </form>
+</div>
+
+<div class="tabs">
+  <div id="tab-overview" class="tab active" onclick="showTab('overview')">Overview</div>
+  <div id="tab-daily" class="tab" onclick="showTab('daily')">Daily</div>
+</div>
+
+<div id="view-overview">
+  <div class="kpi">
+    <div class="box"><b>Views</b><div id="kViews" class="mono">—</div></div>
+    <div class="box"><b>Reach</b><div id="kReach" class="mono">—</div></div>
+    <div class="box"><b>Profile visits</b><div id="kPV" class="mono">—</div></div>
+    <div class="box"><b>Interactions (total)</b><div id="kIT" class="mono">—</div></div>
   </div>
-  <div class="box"><b>Переходов в профиль на 1000 views</b><div class="mono">67.5</div></div>
+
+  <div class="card">
+    <h2>Interactions breakdown</h2>
+    <table>
+      <tr><th>Likes</th><th>Comments</th><th>Saves</th><th>Shares</th><th>Replies</th></tr>
+      <tr>
+        <td class="mono" id="iLikes"></td>
+        <td class="mono" id="iComments"></td>
+        <td class="mono" id="iSaves"></td>
+        <td class="mono" id="iShares"></td>
+        <td class="mono" id="iReplies"></td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Followers vs Non-followers (Reach)</h2>
+      <p><span class="badge">Followers</span> <span class="mono" id="fr_abs"></span> (<span class="mono" id="fr_pct"></span>%)</p>
+      <p><span class="badge">Non-followers</span> <span class="mono" id="nfr_abs"></span> (<span class="mono" id="nfr_pct"></span>%)</p>
+    </div>
+    <div class="card">
+      <h2>Followers vs Non-followers (Views)</h2>
+      <p><span class="badge">Followers</span> <span class="mono" id="fv_abs"></span> (<span class="mono" id="fv_pct"></span>%)</p>
+      <p><span class="badge">Non-followers</span> <span class="mono" id="nfv_abs"></span> (<span class="mono" id="nfv_pct"></span>%)</p>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Views per Reach</h2>
+      <p><span class="badge">Followers</span> <span class="mono" id="vpr_f"></span></p>
+      <p><span class="badge">Non-followers</span> <span class="mono" id="vpr_nf"></span></p>
+    </div>
+    <div class="card">
+      <h2>By content type</h2>
+      <table id="tblSurf">
+        <thead><tr><th>Type</th><th>Reach</th><th>Views</th><th>Views/Reach</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="small">Surfaces with both reach=0 and views=0 are hidden.</p>
+    </div>
+  </div>
 </div>
 
-<div class="card">
-  <h2>Подписчики vs Не-подписчики (по views)</h2>
-  <p class="mono">подписчики: 109 (43.3%) · не-подписчики: 143 (56.7%)</p>
+<div id="view-daily" class="hidden">
+  <div class="card">
+    <h2>Daily table</h2>
+    <table id="tblDaily">
+      <thead><tr>
+        <th>Date</th><th>Views</th><th>Reach</th><th>Profile visits</th><th>Interactions (total)</th>
+        <th>Followers — Views</th><th>Non-followers — Views</th>
+        <th>Followers — Reach</th><th>Non-followers — Reach</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
 
-<div class="card">
-  <h2>Подписчики vs Не-подписчики (по reach)</h2>
-  <p class="mono">подписчики: 24 (54.5%) · не-подписчики: 20 (45.5%)</p>
-</div>
+<script>
+// ---------- Helpers ----------
+const enFmt = (iso) => {
+  const d = new Date(iso+"T00:00:00Z");
+  const months = ["January","February","March","April","May","June",
+                  "July","August","September","October","November","December"];
+  return months[d.getUTCMonth()]+" "+d.getUTCDate()+", "+d.getUTCFullYear();
+};
+const nz = v => (v && v!==0) ? v.toLocaleString("en-US") : ""; // blank for 0
 
-<div class="card">
-  <h2>По типам контента (поверхности)</h2>
-  <table>
-    <tr><th>Surface</th><th>Views</th><th>Reach</th><th>Views/Reach</th></tr>
-    <tr><td>REELS</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.00</td></tr><tr><td>STORY</td><td class='mono'>40</td><td class='mono'>12</td><td class='mono'>3.33</td></tr><tr><td>FEED</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.00</td></tr><tr><td>AD</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.00</td></tr>
-  </table>
-  <p class="small">В «Views» используются <b>content_views</b> (если доступны), иначе — fallback к <b>views</b>.</p>
-</div>
+function showTab(name){
+  document.getElementById("tab-overview").classList.toggle("active", name==="overview");
+  document.getElementById("tab-daily").classList.toggle("active", name==="daily");
+  document.getElementById("view-overview").classList.toggle("hidden", name!=="overview");
+  document.getElementById("view-daily").classList.toggle("hidden", name!=="daily");
+}
+function evApply(e){ e.preventDefault(); render(); }
 
-<div class="card">
-  <h2>Дневные ряды</h2>
-  <table>
-    <tr><th>Дата</th><th>Reach</th><th>Views (content_views)</th><th>Views/Reach</th></tr>
-    <tr><td>18 августа 2025</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>19 августа 2025</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>20 августа 2025</td><td class='mono'>1</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>21 августа 2025</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>22 августа 2025</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>23 августа 2025</td><td class='mono'>12</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>24 августа 2025</td><td class='mono'>12</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>25 августа 2025</td><td class='mono'>1</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>26 августа 2025</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>27 августа 2025</td><td class='mono'>1</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>28 августа 2025</td><td class='mono'>16</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>29 августа 2025</td><td class='mono'>1</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>30 августа 2025</td><td class='mono'>6</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>31 августа 2025</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>1 сентября 2025</td><td class='mono'>2</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>2 сентября 2025</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>3 сентября 2025</td><td class='mono'>1</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>4 сентября 2025</td><td class='mono'>3</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>5 сентября 2025</td><td class='mono'>1</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>6 сентября 2025</td><td class='mono'>1</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>7 сентября 2025</td><td class='mono'>1</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>8 сентября 2025</td><td class='mono'>2</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>9 сентября 2025</td><td class='mono'>10</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>10 сентября 2025</td><td class='mono'>3</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>11 сентября 2025</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>12 сентября 2025</td><td class='mono'>1</td><td class='mono'>0</td><td class='mono'>0.000</td></tr><tr><td>13 сентября 2025</td><td class='mono'>0</td><td class='mono'>0</td><td class='mono'>0.000</td></tr>
-  </table>
-  <p class="small">CSV: <code>out/daily.csv</code></p>
-</div>
+// ---------- Load CSVs ----------
+async function loadCSV(url){
+  const resp = await fetch(url, {cache:"no-store"});
+  if(!resp.ok) throw 0;
+  const txt = await resp.text();
+  const [head, ...lines] = txt.trim().split(/?
+/);
+  const idx = {}; head.split(",").forEach((h,i)=>idx[h]=i);
+  return lines.map(l => {
+    const c = l.split(",");
+    const row = {};
+    for(const k in idx){ row[k] = c[idx[k]]; }
+    return row;
+  });
+}
 
-<div class="card">
-  <h2>Вовлечённость</h2>
-  <ul>
-    <li><b>Accounts engaged</b>: <span class="mono">9</span></li>
-    <li><b>Interactions</b>: <span class="mono">9</span> (likes 7, comments 0, shares 0, saves 0)</li>
-  </ul>
-  <p class="small">CSV: <code>out/engagement_totals.csv</code></p>
-</div>
+async function safeLoad(urls){
+  for(const u of urls){
+    try { return await loadCSV(u); } catch(e){}
+  }
+  return [];
+}
 
-<div class="card">
-  <h2>Файлы данных (CSV)</h2>
-  <ul>
-    <li><code>out/totals.csv</code> — views, profile_views, clicks, <b>reach</b></li>
-    <li><code>out/daily.csv</code> — дневные ряды: reach, content_views, views_per_reach</li>
-    <li><code>out/followers.csv</code> — FOLLOWER / NON_FOLLOWER (views и reach)</li>
-    <li><code>out/surfaces.csv</code> — FEED / STORY / REELS / AD</li>
-    <li><code>out/engagement_totals.csv</code> — likes/comments/shares/saves и др.</li>
-  </ul>
-  <p class="small">Если на сайте нет папки <code>out/</code>, убери строку <code>rm -rf out</code> из шага «Build report» в workflow — и CSV начнут публиковаться.</p>
-</div>
+async function loadData(){
+  const daily   = await safeLoad(["data/daily_history.csv","out/daily.csv"]);
+  const follow  = await safeLoad(["data/daily_follow_breakdown_history.csv","out/daily_follow_breakdown.csv"]);
+  const surf    = await safeLoad(["data/daily_surface_breakdown_history.csv","out/daily_surface_breakdown.csv"]);
+  const inter   = await safeLoad(["data/daily_interactions_history.csv","out/daily_interactions.csv"]);
+  return {daily, follow, surf, inter};
+}
 
-<p class="small">Источник «From Home/Profile/Explore» в API недоступен — смотри в приложении IG. Отчёт генерируется автоматически по расписанию.</p>
+function defaultRange(daily){
+  if(!daily.length) return {from:"", to:""};
+  const dates = daily.map(r=>r.date).sort();
+  return {from: dates[Math.max(0, dates.length-28)], to: dates[dates.length-1]};
+}
+
+// ---------- Aggregate & Render ----------
+let G = {daily:[],follow:[],surf:[],inter:[]};
+
+function filterByRange(rows, from, to){
+  return rows.filter(r => (!from || r.date>=from) && (!to || r.date<=to));
+}
+
+function render(){
+  const from = document.getElementById("dFrom").value;
+  const to   = document.getElementById("dTo").value;
+
+  const D = filterByRange(G.daily, from, to);
+  const F = filterByRange(G.follow, from, to);
+  const S = filterByRange(G.surf, from, to);
+  const I = filterByRange(G.inter, from, to);
+
+  // Build maps for quick lookup (daily)
+  const dmap = {};
+  D.forEach(r => {
+    dmap[r.date] = {
+      views: +(r.views||0), reach: +(r.reach||0),
+      pv: +(r.profile_views||0), it: +(r.interactions_total||0)
+    };
+  });
+
+  // follow maps by date
+  const fViews = {}, fReach = {}, nfViews = {}, nfReach = {};
+  F.forEach(r => {
+    const seg = r.segment;
+    const date = r.date;
+    const v = +(r.views||0), re = +(r.reach||0);
+    if(seg==="FOLLOWER"){
+      (fViews[date] = (fViews[date]||0) + v);
+      (fReach[date] = (fReach[date]||0) + re);
+    } else if(seg==="NON_FOLLOWER"){
+      (nfViews[date] = (nfViews[date]||0) + v);
+      (nfReach[date] = (nfReach[date]||0) + re);
+    }
+  });
+
+  // interactions split (totals per metrics)
+  const likes = {}, comments={}, saves={}, shares={}, replies={};
+  I.forEach(r=>{
+    const d=r.date;
+    likes[d]=(likes[d]||0)+ +(r.likes||0);
+    comments[d]=(comments[d]||0)+ +(r.comments||0);
+    saves[d]=(saves[d]||0)+ +(r.saves||0);
+    shares[d]=(shares[d]||0)+ +(r.shares||0);
+    replies[d]=(replies[d]||0)+ +(r.replies||0);
+  });
+
+  // ----- Overview totals -----
+  let sumViews=0, sumReach=0, sumPV=0, sumIT=0;
+  let sumLikes=0,sumComments=0,sumSaves=0,sumShares=0,sumReplies=0;
+  let frAbs=0, nfrAbs=0, fvAbs=0, nfvAbs=0;
+
+  D.forEach(r=>{
+    sumViews += +(r.views||0);
+    sumReach += +(r.reach||0);
+    sumPV    += +(r.profile_views||0);
+    sumIT    += +(r.interactions_total||0);
+  });
+  I.forEach(r=>{
+    sumLikes   += +(r.likes||0);
+    sumComments+= +(r.comments||0);
+    sumSaves   += +(r.saves||0);
+    sumShares  += +(r.shares||0);
+    sumReplies += +(r.replies||0);
+  });
+  F.forEach(r=>{
+    const v=+(r.views||0), re=+(r.reach||0);
+    if(r.segment==="FOLLOWER"){ fvAbs+=v; frAbs+=re; }
+    else if(r.segment==="NON_FOLLOWER"){ nfvAbs+=v; nfrAbs+=re; }
+  });
+
+  const frPct  = (frAbs+nfrAbs) ? (100*frAbs/(frAbs+nfrAbs)) : 0;
+  const nfrPct = 100 - frPct;
+  const fvPct  = (fvAbs+nfvAbs) ? (100*fvAbs/(fvAbs+nfvAbs)) : 0;
+  const nfvPct = 100 - fvPct;
+
+  const vprF  = frAbs ? (fvAbs / frAbs) : 0;
+  const vprNF = nfrAbs ? (nfvAbs / nfrAbs) : 0;
+
+  // Fill KPIs (blank if zero)
+  const z = (n)=> (n&&n!==0)? n.toLocaleString('en-US') : "";
+  document.getElementById("kViews").textContent = z(sumViews);
+  document.getElementById("kReach").textContent = z(sumReach);
+  document.getElementById("kPV").textContent    = z(sumPV);
+  document.getElementById("kIT").textContent    = z(sumIT);
+
+  document.getElementById("iLikes").textContent    = z(sumLikes);
+  document.getElementById("iComments").textContent = z(sumComments);
+  document.getElementById("iSaves").textContent    = z(sumSaves);
+  document.getElementById("iShares").textContent   = z(sumShares);
+  document.getElementById("iReplies").textContent  = z(sumReplies);
+
+  document.getElementById("fr_abs").textContent  = z(frAbs);
+  document.getElementById("nfr_abs").textContent = z(nfrAbs);
+  document.getElementById("fr_pct").textContent  = frPct ? frPct.toFixed(1) : "";
+  document.getElementById("nfr_pct").textContent = nfrPct ? nfrPct.toFixed(1) : "";
+
+  document.getElementById("fv_abs").textContent  = z(fvAbs);
+  document.getElementById("nfv_abs").textContent = z(nfvAbs);
+  document.getElementById("fv_pct").textContent  = fvPct ? fvPct.toFixed(1) : "";
+  document.getElementById("nfv_pct").textContent = nfvPct ? nfvPct.toFixed(1) : "";
+
+  document.getElementById("vpr_f").textContent  = vprF ? vprF.toFixed(3) : "";
+  document.getElementById("vpr_nf").textContent = vprNF ? vprNF.toFixed(3) : "";
+
+  // Content type (aggregate over range); hide rows with both zeros
+  const surfAgg = {};
+  S.forEach(r=>{
+    const k = r.surface;
+    const v = +(r.views||0), re=+(r.reach||0);
+    const s = (surfAgg[k] ||= {views:0, reach:0});
+    s.views += v; s.reach += re;
+  });
+  const tbodySurf = document.querySelector("#tblSurf tbody");
+  tbodySurf.innerHTML = Object.keys(surfAgg).map(k=>{
+    const s = surfAgg[k], vpr = s.reach? (s.views/s.reach): 0;
+    if((s.views||0)===0 && (s.reach||0)===0) return "";
+    return `<tr><td>${k}</td><td class="mono">${z(s.reach)}</td><td class="mono">${z(s.views)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
+  }).join("") || "<tr><td colspan=4>No data</td></tr>";
+
+  // ----- Daily table -----
+  const dates = Array.from(new Set(D.map(r=>r.date))).sort();
+  const rows = dates.map(date=>{
+    const b = dmap[date] || {views:0,reach:0,pv:0,it:0};
+    const fV = fViews[date]||0, nfV=nfViews[date]||0,
+          fR = fReach[date]||0, nfR=nfReach[date]||0;
+    return `<tr>
+      <td>${enFmt(date)}</td>
+      <td class="mono">${z(b.views)}</td>
+      <td class="mono">${z(b.reach)}</td>
+      <td class="mono">${z(b.pv)}</td>
+      <td class="mono">${z(b.it)}</td>
+      <td class="mono">${z(fV)}</td>
+      <td class="mono">${z(nfV)}</td>
+      <td class="mono">${z(fR)}</td>
+      <td class="mono">${z(nfR)}</td>
+    </tr>`;
+  }).join("");
+  document.querySelector("#tblDaily tbody").innerHTML = rows || "<tr><td colspan=9>No data</td></tr>";
+}
+
+// Init
+loadData().then(({daily,follow,surf,inter})=>{
+  G.daily=daily; G.follow=follow; G.surf=surf; G.inter=inter;
+  const rng = defaultRange(G.daily);
+  if(rng.from) document.getElementById("dFrom").value = rng.from;
+  if(rng.to)   document.getElementById("dTo").value   = rng.to;
+  render();
+});
+</script>
 </body>
