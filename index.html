@@ -128,10 +128,10 @@ async function loadCSV(url){
   const resp = await fetch(url, {cache:"no-store"});
   if(!resp.ok) throw 0;
   const txt = await resp.text();
-  const [head, ...lines] = txt.trim().split(/?
-/);
+  const parts = txt.trim().split(/\\r?\\n/);   // <-- escaped to survive Python string
+  const head = parts.shift();
   const idx = {}; head.split(",").forEach((h,i)=>idx[h]=i);
-  return lines.map(l => {
+  return parts.map(l => {
     const c = l.split(",");
     const row = {};
     for(const k in idx){ row[k] = c[idx[k]]; }
@@ -237,13 +237,12 @@ function render(){
 
   const frPct  = (frAbs+nfrAbs) ? (100*frAbs/(frAbs+nfrAbs)) : 0;
   const nfrPct = 100 - frPct;
-  const fvPct  = (fvAbs+nfvAbs) ? (100*fvAbs/(fvAbs+nfvAbs)) : 0;
+  const fvPct  = (fvAbs+nfvAbs) ? (100*fvAbs/(nfvAbs+fvAbs)) : 0;
   const nfvPct = 100 - fvPct;
 
   const vprF  = frAbs ? (fvAbs / frAbs) : 0;
   const vprNF = nfrAbs ? (nfvAbs / nfrAbs) : 0;
 
-  // Fill KPIs (blank if zero)
   const z = (n)=> (n&&n!==0)? n.toLocaleString('en-US') : "";
   document.getElementById("kViews").textContent = z(sumViews);
   document.getElementById("kReach").textContent = z(sumReach);
@@ -307,10 +306,14 @@ function render(){
 
 // Init
 loadData().then(({daily,follow,surf,inter})=>{
+  window.S = surf; // used in Overview (content type aggregation)
   G.daily=daily; G.follow=follow; G.surf=surf; G.inter=inter;
+  // default = last 28 days from history; if no history yet — server window
   const rng = defaultRange(G.daily);
-  if(rng.from) document.getElementById("dFrom").value = rng.from;
-  if(rng.to)   document.getElementById("dTo").value   = rng.to;
+  const from = rng.from || "2025-06-16";
+  const to   = rng.to   || "2025-09-13";
+  document.getElementById("dFrom").value = from;
+  document.getElementById("dTo").value   = to;
   render();
 });
 </script>
