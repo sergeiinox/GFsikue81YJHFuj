@@ -10,15 +10,10 @@
     --ok:#065f46; --soft:#f3f4f6; --border:#e5e7eb;
   }
   * { box-sizing:border-box; }
-  body {
-    margin:0; padding:24px; font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
-    color:var(--fg); background:var(--bg);
-  }
+  body { margin:0; padding:24px; font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; color:var(--fg); background:var(--bg); }
   h1 { font-size:28px; margin:0 0 8px; }
   .window-note { color:var(--muted); font-size:12px; margin-bottom:18px; }
-  .card {
-    background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px;
-  }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; }
   .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:14px; }
   .kpi { display:flex; flex-direction:column; gap:6px; }
   .kpi .label { color:var(--muted); font-size:12px; }
@@ -33,11 +28,7 @@
   th { font-weight:600; color:var(--muted); background:#fafafa; }
   .pill { display:inline-block; font-size:12px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#fff; }
   .split { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  .badge-partial {
-    display:inline-flex; align-items:center; gap:6px;
-    font-size:11px; line-height:1; padding:4px 8px; border-radius:999px;
-    background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; cursor:help;
-  }
+  .badge-partial { display:inline-flex; align-items:center; gap:6px; font-size:11px; line-height:1; padding:4px 8px; border-radius:999px; background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; cursor:help; }
   .note { color:var(--muted); font-size:12px; margin-top:8px; }
   .date-range { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
   input[type="date"] { padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:#fff; }
@@ -94,14 +85,16 @@
         </div>
       </div>
 
+      <!-- Followers vs Non-followers (Views) -->
       <div class="card" style="grid-column: span 6;">
-        <div class="section-title" id="followTitle">Followers vs Non-followers (Views)</div>
-        <div id="followBox" class="note">—</div>
+        <div class="section-title" id="followViewsTitle">Followers vs Non-followers (Views)</div>
+        <div id="followViewsBox" class="note">—</div>
       </div>
 
+      <!-- Followers vs Non-followers (Reach) -->
       <div class="card" style="grid-column: span 6;">
-        <div class="section-title">Views per Reach</div>
-        <div class="grid" id="vprBox" style="margin-top:6px;"></div>
+        <div class="section-title" id="followReachTitle">Followers vs Non-followers (Reach)</div>
+        <div id="followReachBox" class="note">—</div>
       </div>
 
       <div class="card" style="grid-column: span 12;">
@@ -143,7 +136,6 @@ function fmtHuman(isoStr){
   const f = new Intl.DateTimeFormat('en-US', {month:'long', day:'numeric', year:'numeric'});
   return f.format(d);
 }
-
 function tzOffset(){
   const m = -new Date().getTimezoneOffset();
   const s = m >= 0 ? '+' : '-';
@@ -152,11 +144,9 @@ function tzOffset(){
   return s + hh + ':' + mm;
 }
 
-// tabs
 $('#tabOverview').onclick = () => { $('#tabOverview').classList.add('active'); $('#tabDaily').classList.remove('active'); $('#overview').classList.remove('hidden'); $('#daily').classList.add('hidden'); };
 $('#tabDaily').onclick = () => { $('#tabDaily').classList.add('active'); $('#tabOverview').classList.remove('active'); $('#daily').classList.remove('hidden'); $('#overview').classList.add('hidden'); };
 
-// partial badges
 function ensureBadge(hostSel, text, title){
   const host = $(hostSel);
   if(!host) return;
@@ -183,13 +173,17 @@ async function fetchLive(sinceISO, untilISO){
   return await r.json();
 }
 
+function pct(num, den){ return den>0 ? (num/den*100) : 0; }
+
 function fillOverview(live){
   const totals = live?.totals || {};
   const V = totals.content_views ?? totals.views ?? 0;
-  $('#kpiViews').textContent   = fmtInt(V) || '—';
-  $('#kpiReach').textContent   = fmtInt(totals.reach) || '—';
-  $('#kpiProfiles').textContent= fmtInt(totals.profile_views) || '—';
-  $('#kpiInter').textContent   = fmtInt(totals.total_interactions) || '—';
+  const R = totals.reach ?? 0;
+
+  $('#kpiViews').textContent    = fmtInt(V) || '—';
+  $('#kpiReach').textContent    = fmtInt(R) || '—';
+  $('#kpiProfiles').textContent = fmtInt(totals.profile_views) || '—';
+  $('#kpiInter').textContent    = fmtInt(totals.total_interactions) || '—';
 
   $('#likes').textContent    = fmtInt(totals.likes) || '';
   $('#comments').textContent = fmtInt(totals.comments) || '';
@@ -197,15 +191,15 @@ function fillOverview(live){
   $('#shares').textContent   = fmtInt(totals.shares) || '';
   $('#replies').textContent  = fmtInt(totals.replies) || '';
 
+  // --- Followers vs Non-followers (Views)
   const follow = live?.follow || {};
   const f = follow.FOLLOWER || {views:0, reach:0};
   const nf = follow.NON_FOLLOWER || {views:0, reach:0};
-  const pct = (num, den) => (den>0 ? (num/den*100) : 0);
 
-  const viewsPctF = pct(f.views, V);
+  const viewsPctF  = pct(f.views, V);
   const viewsPctNF = pct(nf.views, V);
 
-  $('#followBox').innerHTML = `
+  $('#followViewsBox').innerHTML = `
     <div class="grid">
       <div class="kpi" style="grid-column:span 6;">
         <span class="pill">Followers</span>
@@ -218,13 +212,24 @@ function fillOverview(live){
     </div>
   `;
 
-  const vprF = f.reach ? f.views / f.reach : 0;
-  const vprNF = nf.reach ? nf.views / nf.reach : 0;
-  $('#vprBox').innerHTML = `
-    <div class="kpi"><div class="pill">Followers</div><div class="value">${fmt2(vprF)}</div></div>
-    <div class="kpi"><div class="pill">Non-followers</div><div class="value">${fmt2(vprNF)}</div></div>
+  // --- Followers vs Non-followers (Reach)
+  const reachPctF  = pct(f.reach, R);
+  const reachPctNF = pct(nf.reach, R);
+
+  $('#followReachBox').innerHTML = `
+    <div class="grid">
+      <div class="kpi" style="grid-column:span 6;">
+        <span class="pill">Followers</span>
+        <div class="note">${fmtInt(f.reach)} (${reachPctF.toFixed(1)}%)</div>
+      </div>
+      <div class="kpi" style="grid-column:span 6;">
+        <span class="pill">Non-followers</span>
+        <div class="note">${fmtInt(nf.reach)} (${reachPctNF.toFixed(1)}%)</div>
+      </div>
+    </div>
   `;
 
+  // --- By content type
   const tbody = $('#surfaceTbl tbody');
   tbody.innerHTML = '';
   const surface = live?.surface || {};
@@ -239,15 +244,18 @@ function fillOverview(live){
     tbody.appendChild(tr);
   }
 
-  const fr = live?.meta?.ratios?.follow;
-  const sr = live?.meta?.ratios?.surface;
+  // badges
+  const fr = live?.meta?.ratios?.follow;   // {views,reach,partial}
+  const sr = live?.meta?.ratios?.surface;  // {views,reach,partial,legacy}
 
   if(fr?.partial){
     const coverage = Math.round(Math.min((fr.views||0),(fr.reach||0))*100);
     const title = `Partial via fallback: followers breakdown returned incomplete data for your range (privacy thresholds or API gaps). Coverage ≈ ${coverage}%.`;
-    ensureBadge('#followTitle', 'partial via fallback', title);
+    ensureBadge('#followViewsTitle',  'partial via fallback', title);
+    ensureBadge('#followReachTitle',  'partial via fallback', title);
   } else {
-    removeBadge('#followTitle');
+    removeBadge('#followViewsTitle');
+    removeBadge('#followReachTitle');
   }
 
   if(sr?.partial){
@@ -270,7 +278,7 @@ async function csvToRows(url){
   const headers = lines[0].split(',').map(s=>s.trim());
   const idx = (name) => headers.findIndex(h => h.toLowerCase()===name.toLowerCase());
   const iDate = idx('date');
-  const iViews = idx('views'); // (already normalised to content_views if you exported so)
+  const iViews = idx('views');
   const iReach = idx('reach');
   const iProfiles = idx('profile_views');
   const iInter = idx('interactions_total') >= 0 ? idx('interactions_total') : idx('total_interactions');
@@ -312,7 +320,6 @@ function fillDaily(rows, fromISO, toISO){
     });
 }
 
-// boot
 let cachedDaily = null;
 
 async function applyRange(fromISO, toISO){
