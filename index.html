@@ -28,10 +28,11 @@ th{background:#fafafa}
 <div class="card">
   <h2>Date range</h2>
   <form id="rng" class="grid2" onsubmit="evApply(event)">
-    <div><label>From</label><br><input id="dFrom" type="date"></div>
-    <div><label>To</label><br><input id="dTo" type="date"></div>
+    <div><label for="dFrom">From</label><br><input id="dFrom" type="date"></div>
+    <div><label for="dTo">To</label><br><input id="dTo" type="date"></div>
     <div><button id="btnApply" class="tab" type="submit">Submit</button></div>
   </form>
+
 </div>
 
 <div class="tabs">
@@ -106,254 +107,209 @@ th{background:#fafafa}
 </div>
 
 <script>
-// ---------- Helpers ----------
+// ==== серверное окно (из шаблона) ====
+const WIN_SINCE = "2025-06-16";
+const WIN_UNTIL = "2025-09-13";
+
+// ==== URL твоего воркера ====
+const LIVE_URL = "https://insta-live-api.vercel.app/api/insights"; // ← подставь
+
+// ---------- Утилиты ----------
 const enFmt = (iso) => {
   const d = new Date(iso+"T00:00:00Z");
-  const months = ["January","February","March","April","May","June",
-                  "July","August","September","October","November","December"];
-  return months[d.getUTCMonth()]+" "+d.getUTCDate()+", "+d.getUTCFullYear();
+  const m = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  return m[d.getUTCMonth()]+" "+d.getUTCDate()+", "+d.getUTCFullYear();
 };
-const nz = v => (v && v!==0) ? (+v).toLocaleString("en-US") : ""; // blank for 0
+const nz = v => (v && v!==0) ? (+v).toLocaleString("en-US") : "";
 
-function showTab(name){
-  document.getElementById("tab-overview").classList.toggle("active", name==="overview");
-  document.getElementById("tab-daily").classList.toggle("active", name==="daily");
-  document.getElementById("view-overview").classList.toggle("hidden", name!=="overview");
-  document.getElementById("view-daily").classList.toggle("hidden", name!=="daily");
-}
-function evApply(e){ e.preventDefault(); render(); }
-
-// ---------- Load CSVs ----------
+// ---------- CSV loader (история) ----------
 async function loadCSV(url){
   const resp = await fetch(url, {cache:"no-store"});
   if(!resp.ok) throw 0;
   let txt = await resp.text();
-  txt = txt.replace(/^\uFEFF/, "");   // BOM
-  txt = txt.trim();
+  txt = txt.replace(/^\uFEFF/, "").trim();
   const lines = txt.split(/\r?\n/);
   if(!lines.length) return [];
   const head = lines.shift().split(",").map(s=>s.trim());
-  const idx = {}; head.forEach((h,i)=>idx[h]=i);
-  return lines.map(l=>{
+  return lines.filter(Boolean).map(l=>{
     const c = l.split(",");
-    const row = {};
-    head.forEach((h,i)=> row[h] = (c[i]||"").trim());
+    const row = {}; head.forEach((h,i)=> row[h] = (c[i]||"").trim());
     return row;
   });
 }
-
-async function safeLoad(urls){
-  for(const u of urls){
-    try { return await loadCSV(u); } catch(e){}
-  }
-  return [];
-}
-
+async function safeLoad(urls){ for(const u of urls){ try { return await loadCSV(u); } catch(e){} } return []; }
 async function loadData(){
   const daily   = await safeLoad(["data/daily_history.csv","out/daily.csv"]);
   const follow  = await safeLoad(["data/daily_follow_breakdown_history.csv","out/daily_follow_breakdown.csv"]);
   const surf    = await safeLoad(["data/daily_surface_breakdown_history.csv","out/daily_surface_breakdown.csv"]);
   const inter   = await safeLoad(["data/daily_interactions_history.csv","out/daily_interactions.csv"]);
-  // Aggregates of the current server window (Overview fallback)
+  // totals_last нужны только как запасной вариант
   const totalsLast  = await safeLoad(["data/totals_last.csv","out/totals.csv"]);
   const followLast  = await safeLoad(["data/totals_follow_last.csv","out/totals_follow.csv"]);
   const surfaceLast = await safeLoad(["data/totals_surface_last.csv","out/totals_surface.csv"]);
   return {daily, follow, surf, inter, totalsLast, followLast, surfaceLast};
 }
-
 function defaultRange(daily){
-  if(!daily.length) return {from:"", to:""};
-  const dates = daily.map(r=>r.date).sort();
-  const to = dates[dates.length-1];
-  // 28 последних дней
-  let fromIdx = Math.max(0, dates.length-28);
-  const from = dates[fromIdx];
-  return {from, to};
+  if(!daily.length) return {from: WIN_SINCE, to: WIN_UNTIL};
+  const ds = daily.map(r=>r.date).sort();
+  return {from: ds[Math.max(0, ds.length-28)], to: ds[ds.length-1]};
 }
+function filterByRange(rows, from, to){ return rows.filter(r => (!from || r.date>=from) && (!to || r.date<=to)); }
 
-// ---------- Aggregate & Render ----------
+// ---------- Глобальное состояние ----------
 let G = {daily:[],follow:[],surf:[],inter:[], totalsLast:[],followLast:[],surfaceLast:[]};
 
-function filterByRange(rows, from, to){
-  return rows.filter(r => (!from || r.date>=from) && (!to || r.date<=to));
-}
-
-function render(){
-  const from = document.getElementById("dFrom").value;
-  const to   = document.getElementById("dTo").value;
-
+// ---------- Рендер D a i l y + «исторический» Overview (как база) ----------
+function renderHistoryOnly(from, to){
   const D = filterByRange(G.daily, from, to);
   const F = filterByRange(G.follow, from, to);
   const S = filterByRange(G.surf, from, to);
   const I = filterByRange(G.inter, from, to);
 
-  // Daily maps
-  const dmap = {};
-  D.forEach(r => {
-    dmap[r.date] = {
-      views: +(r.views||0), reach: +(r.reach||0),
-      pv: +(r.profile_views||0), it: +(r.interactions_total||0)
-    };
-  });
+  // суммируем только аддитивные
+  let sumViews=0,sumPV=0,sumIT=0,sumLikes=0,sumComments=0,sumSaves=0,sumShares=0,sumReplies=0;
+  D.forEach(r=>{ sumViews+=+(r.views||0); sumPV+=+(r.profile_views||0); sumIT+=+(r.interactions_total||0); });
+  I.forEach(r=>{ sumLikes+=+r.likes||0; sumComments+=+r.comments||0; sumSaves+=+r.saves||0; sumShares+=+r.shares||0; sumReplies+=+r.replies||0; });
 
-  // follow maps
-  const fViews = {}, fReach = {}, nfViews = {}, nfReach = {};
-  F.forEach(r => {
-    const seg = r.segment, date = r.date;
-    const v = +(r.views||0), re = +(r.reach||0);
-    if(seg==="FOLLOWER"){
-      fViews[date] = (fViews[date]||0) + v;
-      fReach[date] = (fReach[date]||0) + re;
-    } else if(seg==="NON_FOLLOWER"){
-      nfViews[date] = (nfViews[date]||0) + v;
-      nfReach[date] = (nfReach[date]||0) + re;
-    }
-  });
-
-  // interactions split
-  const likes={},comments={},saves={},shares={},replies={};
-  I.forEach(r=>{
-    const d=r.date;
-    likes[d]=(likes[d]||0)+ +(r.likes||0);
-    comments[d]=(comments[d]||0)+ +(r.comments||0);
-    saves[d]=(saves[d]||0)+ +(r.saves||0);
-    shares[d]=(shares[d]||0)+ +(r.shares||0);
-    replies[d]=(replies[d]||0)+ +(r.replies||0);
-  });
-
-  // ----- Overview totals -----
-  let sumViews=0, sumReach=0, sumPV=0, sumIT=0;
-  let sumLikes=0,sumComments=0,sumSaves=0,sumShares=0,sumReplies=0;
-  let frAbs=0, nfrAbs=0, fvAbs=0, nfvAbs=0;
-
-  D.forEach(r=>{
-    sumViews += +(r.views||0);
-    sumReach += +(r.reach||0);
-    sumPV    += +(r.profile_views||0);
-    sumIT    += +(r.interactions_total||0);
-  });
-  I.forEach(r=>{
-    sumLikes   += +(r.likes||0);
-    sumComments+= +(r.comments||0);
-    sumSaves   += +(r.saves||0);
-    sumShares  += +(r.shares||0);
-    sumReplies += +(r.replies||0);
-  });
-  F.forEach(r=>{
-    const v=+(r.views||0), re=+(r.reach||0);
-    if(r.segment==="FOLLOWER"){ fvAbs+=v; frAbs+=re; }
-    else if(r.segment==="NON_FOLLOWER"){ nfvAbs+=v; nfrAbs+=re; }
-  });
-
-    // Фоллбек на серверные тоталы — только если в выбранном диапазоне НЕТ строк истории
-  const useTotals = (D.length === 0) && (G.totalsLast || []).length;
-  if (useTotals){
-    const t = G.totalsLast[0] || {};
-    sumViews = +(t.views||0);
-    sumReach = +(t.reach||0);
-    sumPV    = +(t.profile_views||0);
-    sumIT    = +(t.interactions_total||0);
-  }
-
-    // Если в выбранном диапазоне нет строк разреза — берём агрегаты окна
-  if ((F.length === 0) && (G.followLast || []).length){
-    const f = {};
-    G.followLast.forEach(r=>{ f[r.segment]=r; });
-    const Fw = f["FOLLOWER"]     || {views:0,reach:0};
-    const NF = f["NON_FOLLOWER"] || {views:0,reach:0};
-    frAbs = +(Fw.reach||0); nfrAbs = +(NF.reach||0);
-    fvAbs = +(Fw.views||0); nfvAbs = +(NF.views||0);
-  }
-
-
-  const frPct  = (frAbs+nfrAbs) ? (100*frAbs/(frAbs+nfrAbs)) : 0;
-  const nfrPct = (frAbs+nfrAbs) ? (100 - frPct) : 0;
-  const fvPct  = (fvAbs+nfvAbs) ? (100*fvAbs/(nfvAbs+fvAbs)) : 0;
-  const nfvPct = (fvAbs+nfvAbs) ? (100 - fvPct) : 0;
-  const vprF  = frAbs ? (fvAbs / frAbs) : 0;
-  const vprNF = nfrAbs ? (nfvAbs / nfrAbs) : 0;
-
-  // KPIs
+  // KPI (без reach — чтобы не вводить в заблуждение)
   document.getElementById("kViews").textContent = nz(sumViews);
-  document.getElementById("kReach").textContent = nz(sumReach);
+  document.getElementById("kReach").textContent = "";               // уникальный за произвольный диапазон недоступен из истории
   document.getElementById("kPV").textContent    = nz(sumPV);
   document.getElementById("kIT").textContent    = nz(sumIT);
-
   document.getElementById("iLikes").textContent    = nz(sumLikes);
   document.getElementById("iComments").textContent = nz(sumComments);
   document.getElementById("iSaves").textContent    = nz(sumSaves);
   document.getElementById("iShares").textContent   = nz(sumShares);
   document.getElementById("iReplies").textContent  = nz(sumReplies);
 
-  document.getElementById("fr_abs").textContent  = nz(frAbs);
-  document.getElementById("nfr_abs").textContent = nz(nfrAbs);
-  document.getElementById("fr_pct").textContent  = frPct ? frPct.toFixed(1) : "";
-  document.getElementById("nfr_pct").textContent = nfrPct ? nfrPct.toFixed(1) : "";
+  // Followers/Non-followers и Content type — считаем из history (если строк нет — оставим пусто)
+  let frAbs=0,nfrAbs=0,fvAbs=0,nfvAbs=0;
+  F.forEach(r=>{ const v=+r.views||0,re=+r.reach||0; if(r.segment==="FOLLOWER"){fvAbs+=v;frAbs+=re;} else if(r.segment==="NON_FOLLOWER"){nfvAbs+=v;nfrAbs+=re;} });
+  const frPct=(frAbs+nfrAbs)?(100*frAbs/(frAbs+nfrAbs)):0, fvPct=(fvAbs+nfvAbs)?(100*fvAbs/(fvAbs+nfvAbs)):0;
+  document.getElementById("fr_abs").textContent=nz(frAbs); document.getElementById("nfr_abs").textContent=nz(nfrAbs);
+  document.getElementById("fr_pct").textContent=frPct?frPct.toFixed(1):""; document.getElementById("nfr_pct").textContent=frPct?(100-frPct).toFixed(1):"";
+  document.getElementById("fv_abs").textContent=nz(fvAbs); document.getElementById("nfv_abs").textContent=nz(nfvAbs);
+  document.getElementById("fv_pct").textContent=fvPct?fvPct.toFixed(1):""; document.getElementById("nfv_pct").textContent=fvPct?(100-fvPct).toFixed(1):"";
+  document.getElementById("vpr_f").textContent = frAbs? (fvAbs/frAbs).toFixed(3):"";
+  document.getElementById("vpr_nf").textContent = nfrAbs? (nfvAbs/nfrAbs).toFixed(3):"";
 
-  document.getElementById("fv_abs").textContent  = nz(fvAbs);
-  document.getElementById("nfv_abs").textContent = nz(nfvAbs);
-  document.getElementById("fv_pct").textContent  = fvPct ? fvPct.toFixed(1) : "";
-  document.getElementById("nfv_pct").textContent = nfvPct ? nfvPct.toFixed(1) : "";
-
-  document.getElementById("vpr_f").textContent  = vprF ? vprF.toFixed(3) : "";
-  document.getElementById("vpr_nf").textContent = vprNF ? vprNF.toFixed(3) : "";
-
-  // Content type aggregation
-  const surfAgg = {};
-  S.forEach(r=>{
-    const k = r.surface;
-    const v = +(r.views||0), re=+(r.reach||0);
-    const s = (surfAgg[k] ||= {views:0, reach:0});
-    s.views += v; s.reach += re;
-  });
-  const tbodySurf = document.querySelector("#tblSurf tbody");
-  let surfHtml = Object.keys(surfAgg).map(k=>{
-    const s = surfAgg[k], vpr = s.reach? (s.views/s.reach): 0;
-    if((s.views||0)===0 && (s.reach||0)===0) return "";
+  const surfAgg={}; S.forEach(r=>{ const k=r.surface; const v=+r.views||0,re=+r.reach||0; const s=(surfAgg[k] ||= {views:0,reach:0}); s.views+=v; s.reach+=re; });
+  const tbodySurf=document.querySelector("#tblSurf tbody");
+  tbodySurf.innerHTML = Object.keys(surfAgg).map(k=>{
+    const s=surfAgg[k], vpr=s.reach? (s.views/s.reach):0;
+    if(!s.views && !s.reach) return "";
     return `<tr><td>${k}</td><td class="mono">${nz(s.reach)}</td><td class="mono">${nz(s.views)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
-  }).join("");
-  // Фоллбек: используем агрегаты окна, только если в выбранном диапазоне НЕТ строк по surface
-  if (S.length === 0 && (G.surfaceLast || []).length){
-    surfHtml = G.surfaceLast.map(r=>{
-      const v = +(r.views||0), re = +(r.reach||0);
-      const vpr = re ? (v/re) : 0;
-      if(!v && !re) return "";
-      return `<tr><td>${r.surface}</td><td class="mono">${nz(re)}</td><td class="mono">${nz(v)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
-    }).join("");
-  }
-  tbodySurf.innerHTML = surfHtml || "<tr><td colspan=4>No data</td></tr>";
-  // ----- Daily table -----
+  }).join("") || "<tr><td colspan=4>No data</td></tr>";
+
+  // Daily
   const dates = Array.from(new Set(D.map(r=>r.date))).sort();
-  const rows = dates.map(date=>{
-    const b = dmap[date] || {views:0,reach:0,pv:0,it:0};
-    const fV = fViews[date]||0, nfV=nfViews[date]||0,
-          fR = fReach[date]||0, nfR=nfReach[date]||0;
+  const dmap={}; D.forEach(r=>{ dmap[r.date]={views:+r.views||0,reach:+r.reach||0,pv:+r.profile_views||0,it:+r.interactions_total||0}; });
+  const fV={},nfV={},fR={},nfR={}; filterByRange(G.follow, from,to).forEach(r=>{
+    const d=r.date, v=+r.views||0, re=+r.reach||0;
+    if(r.segment==="FOLLOWER"){ fV[d]=(fV[d]||0)+v; fR[d]=(fR[d]||0)+re; }
+    else if(r.segment==="NON_FOLLOWER"){ nfV[d]=(nfV[d]||0)+v; nfR[d]=(nfR[d]||0)+re; }
+  });
+  document.querySelector("#tblDaily tbody").innerHTML = dates.map(date=>{
+    const b=dmap[date]||{views:0,reach:0,pv:0,it:0};
     return `<tr>
       <td>${enFmt(date)}</td>
       <td class="mono">${nz(b.views)}</td>
       <td class="mono">${nz(b.reach)}</td>
       <td class="mono">${nz(b.pv)}</td>
       <td class="mono">${nz(b.it)}</td>
-      <td class="mono">${nz(fV)}</td>
-      <td class="mono">${nz(nfV)}</td>
-      <td class="mono">${nz(fR)}</td>
-      <td class="mono">${nz(nfR)}</td>
+      <td class="mono">${nz(fV[date]||0)}</td>
+      <td class="mono">${nz(nfV[date]||0)}</td>
+      <td class="mono">${nz(fR[date]||0)}</td>
+      <td class="mono">${nz(nfR[date]||0)}</td>
     </tr>`;
-  }).join("");
-  document.querySelector("#tblDaily tbody").innerHTML = rows || "<tr><td colspan=9>No data</td></tr>";
+  }).join("") || "<tr><td colspan=9>No data</td></tr>";
 }
 
-// Init
+// ---------- «Живой» запрос на воркер ----------
+async function fetchLive(from, to){
+  const u = new URL(LIVE_URL);
+  u.searchParams.set("since", from);
+  u.searchParams.set("until", to);
+  const r = await fetch(u.toString(), { mode: "cors" });
+  if (!r.ok) throw new Error("Live API failed");
+  return r.json();
+}
+function applyLiveOverview(resp){
+  const t = resp.totals || {};
+  // reach: exact ≤30 дней, approx >30 (пометку можно визуализировать тильдой)
+  const reachVal = (resp.meta && resp.meta.reach_kind === "approx") ? ("≈ " + (t.reach || 0)) : (t.reach ?? "");
+  document.getElementById("kViews").textContent = nz(t.views);
+  document.getElementById("kReach").textContent = (reachVal===""? "": (typeof reachVal==="string"? reachVal : nz(reachVal)));
+  document.getElementById("kPV").textContent    = nz(t.profile_views);
+  document.getElementById("kIT").textContent    = nz(t.total_interactions);
+  document.getElementById("iLikes").textContent    = nz(t.likes);
+  document.getElementById("iComments").textContent = nz(t.comments);
+  document.getElementById("iSaves").textContent    = nz(t.saves);
+  document.getElementById("iShares").textContent   = nz(t.shares);
+  document.getElementById("iReplies").textContent  = nz(t.replies);
+
+  // followers
+  const f = resp.follow || {};
+  const Fw = f.FOLLOWER || {views:0, reach:0}, NF = f.NON_FOLLOWER || {views:0, reach:0};
+  const frAbs=+Fw.reach||0, nfrAbs=+NF.reach||0, fvAbs=+Fw.views||0, nfvAbs=+NF.views||0;
+  const frPct=(frAbs+nfrAbs)?(100*frAbs/(frAbs+nfrAbs)):0, fvPct=(fvAbs+nfvAbs)?(100*fvAbs/(fvAbs+nfvAbs)):0;
+  document.getElementById("fr_abs").textContent=nz(frAbs); document.getElementById("nfr_abs").textContent=nz(nfrAbs);
+  document.getElementById("fr_pct").textContent=frPct?frPct.toFixed(1):""; document.getElementById("nfr_pct").textContent=frPct?(100-frPct).toFixed(1):"";
+  document.getElementById("fv_abs").textContent=nz(fvAbs); document.getElementById("nfv_abs").textContent=nz(nfvAbs);
+  document.getElementById("fv_pct").textContent=fvPct?fvPct.toFixed(1):""; document.getElementById("nfv_pct").textContent=fvPct?(100-fvPct).toFixed(1):"";
+  document.getElementById("vpr_f").textContent = frAbs? (fvAbs/frAbs).toFixed(3):"";
+  document.getElementById("vpr_nf").textContent = nfrAbs? (nfvAbs/nfrAbs).toFixed(3):"";
+
+  // content type
+  const s = resp.surface || {}; const tbody = document.querySelector("#tblSurf tbody");
+  const rows = Object.keys(s).map(k=>{
+    const x=s[k]||{}; const v=+x.views||0, re=+x.reach||0, vpr=re? v/re:0;
+    if(!v && !re) return "";
+    return `<tr><td>${k}</td><td class="mono">${nz(re)}</td><td class="mono">${nz(v)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
+  }).join("");
+  tbody.innerHTML = rows || "<tr><td colspan=4>No data</td></tr>";
+}
+
+// ---------- Обработчик Submit ----------
+async function evApply(e){
+  e.preventDefault();
+  const from = document.getElementById("dFrom").value || WIN_SINCE;
+  const to   = document.getElementById("dTo").value   || WIN_UNTIL;
+
+  // 1) Перерисовываем Daily и «базовый» Overview из истории (без reach)
+  renderHistoryOnly(from, to);
+
+  // 2) Пробуем «живой» вызов — обновит Overview точными totals и разрезами
+  const btn = document.getElementById("btnApply");
+  try {
+    btn.disabled = true;
+    const live = await fetchLive(from, to);
+    applyLiveOverview(live);
+  } catch (err) {
+    console.warn("Live API failed:", err);
+    // остаёмся на истории — это безопасный фоллбек
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ---------- Инициализация ----------
+function showTab(name){
+  document.getElementById("tab-overview").classList.toggle("active", name==="overview");
+  document.getElementById("tab-daily").classList.toggle("active", name==="daily");
+  document.getElementById("view-overview").classList.toggle("hidden", name!=="overview");
+  document.getElementById("view-daily").classList.toggle("hidden", name!=="daily");
+}
 loadData().then(({daily,follow,surf,inter,totalsLast,followLast,surfaceLast})=>{
-  window.S = surf;
   G.daily=daily; G.follow=follow; G.surf=surf; G.inter=inter;
   G.totalsLast=totalsLast; G.followLast=followLast; G.surfaceLast=surfaceLast;
   const rng = defaultRange(G.daily);
-  const from = rng.from || "2025-06-16";
-  const to   = rng.to   || "2025-09-13";
-  document.getElementById("dFrom").value = from;
-  document.getElementById("dTo").value   = to;
-  render();
+  document.getElementById("dFrom").value = rng.from;
+  document.getElementById("dTo").value   = rng.to;
+  // стартовый рендер: как история
+  renderHistoryOnly(rng.from, rng.to);
 });
 </script>
+
+
 </body>
