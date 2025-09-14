@@ -23,7 +23,7 @@ th{background:#fafafa}
 </style>
 <body>
 <h1>Instagram Insights</h1>
-<p class="small">Window: <b>June 16, 2025</b> — <b>September 13, 2025</b>. Data aggregated on server, interactive range below is computed client-side from history.</p>
+<p class="small">Window: <b>June 15, 2025</b> — <b>September 12, 2025</b>. Data aggregated on server, interactive range below is computed client-side from history.</p>
 
 <div class="card">
   <h2>Date range</h2>
@@ -245,8 +245,8 @@ function render(){
     else if(r.segment==="NON_FOLLOWER"){ nfvAbs+=v; nfrAbs+=re; }
   });
 
-  // Фолбек на агрегаты окна, если дневные суммы пустые
-  const useTotals = (!sumViews && !sumPV && !sumIT && (G.totalsLast||[]).length);
+    // Фоллбек на серверные тоталы — только если в выбранном диапазоне НЕТ строк истории
+  const useTotals = (D.length === 0) && (G.totalsLast || []).length;
   if (useTotals){
     const t = G.totalsLast[0] || {};
     sumViews = +(t.views||0);
@@ -254,14 +254,17 @@ function render(){
     sumPV    = +(t.profile_views||0);
     sumIT    = +(t.interactions_total||0);
   }
-  if (((frAbs+nfrAbs+fvAbs+nfvAbs)===0) && (G.followLast||[]).length){
+
+    // Если в выбранном диапазоне нет строк разреза — берём агрегаты окна
+  if ((F.length === 0) && (G.followLast || []).length){
     const f = {};
     G.followLast.forEach(r=>{ f[r.segment]=r; });
-    const Fw = f["FOLLOWER"]      || {views:0,reach:0};
-    const NF = f["NON_FOLLOWER"]  || {views:0,reach:0};
+    const Fw = f["FOLLOWER"]     || {views:0,reach:0};
+    const NF = f["NON_FOLLOWER"] || {views:0,reach:0};
     frAbs = +(Fw.reach||0); nfrAbs = +(NF.reach||0);
     fvAbs = +(Fw.views||0); nfvAbs = +(NF.views||0);
   }
+
 
   const frPct  = (frAbs+nfrAbs) ? (100*frAbs/(frAbs+nfrAbs)) : 0;
   const nfrPct = (frAbs+nfrAbs) ? (100 - frPct) : 0;
@@ -309,16 +312,16 @@ function render(){
     if((s.views||0)===0 && (s.reach||0)===0) return "";
     return `<tr><td>${k}</td><td class="mono">${nz(s.reach)}</td><td class="mono">${nz(s.views)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
   }).join("");
-  if(!surfHtml && (G.surfaceLast||[]).length){
+  // Фоллбек: используем агрегаты окна, только если в выбранном диапазоне НЕТ строк по surface
+  if (S.length === 0 && (G.surfaceLast || []).length){
     surfHtml = G.surfaceLast.map(r=>{
-      const v = +(r.views||0), re=+(r.reach||0);
+      const v = +(r.views||0), re = +(r.reach||0);
       const vpr = re ? (v/re) : 0;
       if(!v && !re) return "";
       return `<tr><td>${r.surface}</td><td class="mono">${nz(re)}</td><td class="mono">${nz(v)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
     }).join("");
   }
   tbodySurf.innerHTML = surfHtml || "<tr><td colspan=4>No data</td></tr>";
-
   // ----- Daily table -----
   const dates = Array.from(new Set(D.map(r=>r.date))).sort();
   const rows = dates.map(date=>{
@@ -346,8 +349,8 @@ loadData().then(({daily,follow,surf,inter,totalsLast,followLast,surfaceLast})=>{
   G.daily=daily; G.follow=follow; G.surf=surf; G.inter=inter;
   G.totalsLast=totalsLast; G.followLast=followLast; G.surfaceLast=surfaceLast;
   const rng = defaultRange(G.daily);
-  const from = rng.from || "2025-06-16";
-  const to   = rng.to   || "2025-09-13";
+  const from = rng.from || "2025-06-15";
+  const to   = rng.to   || "2025-09-12";
   document.getElementById("dFrom").value = from;
   document.getElementById("dTo").value   = to;
   render();
