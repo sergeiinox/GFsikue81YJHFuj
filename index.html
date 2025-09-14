@@ -113,7 +113,7 @@ const enFmt = (iso) => {
                   "July","August","September","October","November","December"];
   return months[d.getUTCMonth()]+" "+d.getUTCDate()+", "+d.getUTCFullYear();
 };
-const nz = v => (v && v!==0) ? v.toLocaleString("en-US") : ""; // blank for 0
+const nz = v => (v && v!==0) ? (+v).toLocaleString("en-US") : ""; // blank for 0
 
 function showTab(name){
   document.getElementById("tab-overview").classList.toggle("active", name==="overview");
@@ -127,14 +127,17 @@ function evApply(e){ e.preventDefault(); render(); }
 async function loadCSV(url){
   const resp = await fetch(url, {cache:"no-store"});
   if(!resp.ok) throw 0;
-  const txt = await resp.text();
-  const parts = txt.trim().split(/\\r?\\n/);   // <-- escaped to survive Python string
-  const head = parts.shift();
-  const idx = {}; head.split(",").forEach((h,i)=>idx[h]=i);
-  return parts.map(l => {
+  let txt = await resp.text();
+  txt = txt.replace(/^\uFEFF/, "");   // BOM
+  txt = txt.trim();
+  const lines = txt.split(/\r?\n/);
+  if(!lines.length) return [];
+  const head = lines.shift().split(",").map(s=>s.trim());
+  const idx = {}; head.forEach((h,i)=>idx[h]=i);
+  return lines.map(l=>{
     const c = l.split(",");
     const row = {};
-    for(const k in idx){ row[k] = c[idx[k]]; }
+    head.forEach((h,i)=> row[h] = (c[i]||"").trim());
     return row;
   });
 }
@@ -151,17 +154,25 @@ async function loadData(){
   const follow  = await safeLoad(["data/daily_follow_breakdown_history.csv","out/daily_follow_breakdown.csv"]);
   const surf    = await safeLoad(["data/daily_surface_breakdown_history.csv","out/daily_surface_breakdown.csv"]);
   const inter   = await safeLoad(["data/daily_interactions_history.csv","out/daily_interactions.csv"]);
-  return {daily, follow, surf, inter};
+  // Aggregates of the current server window (Overview fallback)
+  const totalsLast  = await safeLoad(["data/totals_last.csv","out/totals.csv"]);
+  const followLast  = await safeLoad(["data/totals_follow_last.csv","out/totals_follow.csv"]);
+  const surfaceLast = await safeLoad(["data/totals_surface_last.csv","out/totals_surface.csv"]);
+  return {daily, follow, surf, inter, totalsLast, followLast, surfaceLast};
 }
 
 function defaultRange(daily){
   if(!daily.length) return {from:"", to:""};
   const dates = daily.map(r=>r.date).sort();
-  return {from: dates[Math.max(0, dates.length-28)], to: dates[dates.length-1]};
+  const to = dates[dates.length-1];
+  // 28 последних дней
+  let fromIdx = Math.max(0, dates.length-28);
+  const from = dates[fromIdx];
+  return {from, to};
 }
 
 // ---------- Aggregate & Render ----------
-let G = {daily:[],follow:[],surf:[],inter:[]};
+let G = {daily:[],follow:[],surf:[],inter:[], totalsLast:[],followLast:[],surfaceLast:[]};
 
 function filterByRange(rows, from, to){
   return rows.filter(r => (!from || r.date>=from) && (!to || r.date<=to));
@@ -176,7 +187,7 @@ function render(){
   const S = filterByRange(G.surf, from, to);
   const I = filterByRange(G.inter, from, to);
 
-  // Build maps for quick lookup (daily)
+  // Daily maps
   const dmap = {};
   D.forEach(r => {
     dmap[r.date] = {
@@ -185,23 +196,22 @@ function render(){
     };
   });
 
-  // follow maps by date
+  // follow maps
   const fViews = {}, fReach = {}, nfViews = {}, nfReach = {};
   F.forEach(r => {
-    const seg = r.segment;
-    const date = r.date;
+    const seg = r.segment, date = r.date;
     const v = +(r.views||0), re = +(r.reach||0);
     if(seg==="FOLLOWER"){
-      (fViews[date] = (fViews[date]||0) + v);
-      (fReach[date] = (fReach[date]||0) + re);
+      fViews[date] = (fViews[date]||0) + v;
+      fReach[date] = (fReach[date]||0) + re;
     } else if(seg==="NON_FOLLOWER"){
-      (nfViews[date] = (nfViews[date]||0) + v);
-      (nfReach[date] = (nfReach[date]||0) + re);
+      nfViews[date] = (nfViews[date]||0) + v;
+      nfReach[date] = (nfReach[date]||0) + re;
     }
   });
 
-  // interactions split (totals per metrics)
-  const likes = {}, comments={}, saves={}, shares={}, replies={};
+  // interactions split
+  const likes={},comments={},saves={},shares={},replies={};
   I.forEach(r=>{
     const d=r.date;
     likes[d]=(likes[d]||0)+ +(r.likes||0);
@@ -235,40 +245,57 @@ function render(){
     else if(r.segment==="NON_FOLLOWER"){ nfvAbs+=v; nfrAbs+=re; }
   });
 
-  const frPct  = (frAbs+nfrAbs) ? (100*frAbs/(frAbs+nfrAbs)) : 0;
-  const nfrPct = 100 - frPct;
-  const fvPct  = (fvAbs+nfvAbs) ? (100*fvAbs/(nfvAbs+fvAbs)) : 0;
-  const nfvPct = 100 - fvPct;
+  // Фолбек на агрегаты окна, если дневные суммы пустые
+  const useTotals = (!sumViews && !sumPV && !sumIT && (G.totalsLast||[]).length);
+  if (useTotals){
+    const t = G.totalsLast[0] || {};
+    sumViews = +(t.views||0);
+    sumReach = +(t.reach||0);
+    sumPV    = +(t.profile_views||0);
+    sumIT    = +(t.interactions_total||0);
+  }
+  if (((frAbs+nfrAbs+fvAbs+nfvAbs)===0) && (G.followLast||[]).length){
+    const f = {};
+    G.followLast.forEach(r=>{ f[r.segment]=r; });
+    const Fw = f["FOLLOWER"]      || {views:0,reach:0};
+    const NF = f["NON_FOLLOWER"]  || {views:0,reach:0};
+    frAbs = +(Fw.reach||0); nfrAbs = +(NF.reach||0);
+    fvAbs = +(Fw.views||0); nfvAbs = +(NF.views||0);
+  }
 
+  const frPct  = (frAbs+nfrAbs) ? (100*frAbs/(frAbs+nfrAbs)) : 0;
+  const nfrPct = (frAbs+nfrAbs) ? (100 - frPct) : 0;
+  const fvPct  = (fvAbs+nfvAbs) ? (100*fvAbs/(nfvAbs+fvAbs)) : 0;
+  const nfvPct = (fvAbs+nfvAbs) ? (100 - fvPct) : 0;
   const vprF  = frAbs ? (fvAbs / frAbs) : 0;
   const vprNF = nfrAbs ? (nfvAbs / nfrAbs) : 0;
 
-  const z = (n)=> (n&&n!==0)? n.toLocaleString('en-US') : "";
-  document.getElementById("kViews").textContent = z(sumViews);
-  document.getElementById("kReach").textContent = z(sumReach);
-  document.getElementById("kPV").textContent    = z(sumPV);
-  document.getElementById("kIT").textContent    = z(sumIT);
+  // KPIs
+  document.getElementById("kViews").textContent = nz(sumViews);
+  document.getElementById("kReach").textContent = nz(sumReach);
+  document.getElementById("kPV").textContent    = nz(sumPV);
+  document.getElementById("kIT").textContent    = nz(sumIT);
 
-  document.getElementById("iLikes").textContent    = z(sumLikes);
-  document.getElementById("iComments").textContent = z(sumComments);
-  document.getElementById("iSaves").textContent    = z(sumSaves);
-  document.getElementById("iShares").textContent   = z(sumShares);
-  document.getElementById("iReplies").textContent  = z(sumReplies);
+  document.getElementById("iLikes").textContent    = nz(sumLikes);
+  document.getElementById("iComments").textContent = nz(sumComments);
+  document.getElementById("iSaves").textContent    = nz(sumSaves);
+  document.getElementById("iShares").textContent   = nz(sumShares);
+  document.getElementById("iReplies").textContent  = nz(sumReplies);
 
-  document.getElementById("fr_abs").textContent  = z(frAbs);
-  document.getElementById("nfr_abs").textContent = z(nfrAbs);
+  document.getElementById("fr_abs").textContent  = nz(frAbs);
+  document.getElementById("nfr_abs").textContent = nz(nfrAbs);
   document.getElementById("fr_pct").textContent  = frPct ? frPct.toFixed(1) : "";
   document.getElementById("nfr_pct").textContent = nfrPct ? nfrPct.toFixed(1) : "";
 
-  document.getElementById("fv_abs").textContent  = z(fvAbs);
-  document.getElementById("nfv_abs").textContent = z(nfvAbs);
+  document.getElementById("fv_abs").textContent  = nz(fvAbs);
+  document.getElementById("nfv_abs").textContent = nz(nfvAbs);
   document.getElementById("fv_pct").textContent  = fvPct ? fvPct.toFixed(1) : "";
   document.getElementById("nfv_pct").textContent = nfvPct ? nfvPct.toFixed(1) : "";
 
   document.getElementById("vpr_f").textContent  = vprF ? vprF.toFixed(3) : "";
   document.getElementById("vpr_nf").textContent = vprNF ? vprNF.toFixed(3) : "";
 
-  // Content type (aggregate over range); hide rows with both zeros
+  // Content type aggregation
   const surfAgg = {};
   S.forEach(r=>{
     const k = r.surface;
@@ -277,11 +304,20 @@ function render(){
     s.views += v; s.reach += re;
   });
   const tbodySurf = document.querySelector("#tblSurf tbody");
-  tbodySurf.innerHTML = Object.keys(surfAgg).map(k=>{
+  let surfHtml = Object.keys(surfAgg).map(k=>{
     const s = surfAgg[k], vpr = s.reach? (s.views/s.reach): 0;
     if((s.views||0)===0 && (s.reach||0)===0) return "";
-    return `<tr><td>${k}</td><td class="mono">${z(s.reach)}</td><td class="mono">${z(s.views)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
-  }).join("") || "<tr><td colspan=4>No data</td></tr>";
+    return `<tr><td>${k}</td><td class="mono">${nz(s.reach)}</td><td class="mono">${nz(s.views)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
+  }).join("");
+  if(!surfHtml && (G.surfaceLast||[]).length){
+    surfHtml = G.surfaceLast.map(r=>{
+      const v = +(r.views||0), re=+(r.reach||0);
+      const vpr = re ? (v/re) : 0;
+      if(!v && !re) return "";
+      return `<tr><td>${r.surface}</td><td class="mono">${nz(re)}</td><td class="mono">${nz(v)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
+    }).join("");
+  }
+  tbodySurf.innerHTML = surfHtml || "<tr><td colspan=4>No data</td></tr>";
 
   // ----- Daily table -----
   const dates = Array.from(new Set(D.map(r=>r.date))).sort();
@@ -291,24 +327,24 @@ function render(){
           fR = fReach[date]||0, nfR=nfReach[date]||0;
     return `<tr>
       <td>${enFmt(date)}</td>
-      <td class="mono">${z(b.views)}</td>
-      <td class="mono">${z(b.reach)}</td>
-      <td class="mono">${z(b.pv)}</td>
-      <td class="mono">${z(b.it)}</td>
-      <td class="mono">${z(fV)}</td>
-      <td class="mono">${z(nfV)}</td>
-      <td class="mono">${z(fR)}</td>
-      <td class="mono">${z(nfR)}</td>
+      <td class="mono">${nz(b.views)}</td>
+      <td class="mono">${nz(b.reach)}</td>
+      <td class="mono">${nz(b.pv)}</td>
+      <td class="mono">${nz(b.it)}</td>
+      <td class="mono">${nz(fV)}</td>
+      <td class="mono">${nz(nfV)}</td>
+      <td class="mono">${nz(fR)}</td>
+      <td class="mono">${nz(nfR)}</td>
     </tr>`;
   }).join("");
   document.querySelector("#tblDaily tbody").innerHTML = rows || "<tr><td colspan=9>No data</td></tr>";
 }
 
 // Init
-loadData().then(({daily,follow,surf,inter})=>{
-  window.S = surf; // used in Overview (content type aggregation)
+loadData().then(({daily,follow,surf,inter,totalsLast,followLast,surfaceLast})=>{
+  window.S = surf;
   G.daily=daily; G.follow=follow; G.surf=surf; G.inter=inter;
-  // default = last 28 days from history; if no history yet — server window
+  G.totalsLast=totalsLast; G.followLast=followLast; G.surfaceLast=surfaceLast;
   const rng = defaultRange(G.daily);
   const from = rng.from || "2025-06-16";
   const to   = rng.to   || "2025-09-13";
