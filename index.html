@@ -1,315 +1,305 @@
-<!doctype html><meta charset="utf-8">
-<title>Instagram Insights — Report</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex,nofollow">
-<style>
-body{font:15px/1.6 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:28px auto;max-width:1100px;color:#111}
-h1,h2{line-height:1.25;margin:0 0 10px}
-.card{border:1px solid #e5e7eb;border-radius:14px;padding:16px;margin:14px 0}
-.kpi{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:12px}
-.kpi .box{border:1px solid #e5e7eb;border-radius:12px;padding:12px}
-.tabs{display:flex;gap:8px;margin:14px 0}
-.tab{padding:8px 12px;border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;background:#fafafa}
-.tab.active{background:white;border-bottom-color:white;box-shadow:0 2px 0 0 white}
-.hidden{display:none}
-table{border-collapse:collapse;width:100%}
-th,td{border:1px solid #eee;padding:8px;text-align:left}
-th{background:#fafafa}
-.mono{font-variant-numeric:tabular-nums}
-.small{color:#555;font-size:13px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:900px){.kpi{grid-template-columns:1fr 1fr} .grid2{grid-template-columns:1fr}}
-.badge{display:inline-block;padding:2px 8px;border:1px solid #e5e7eb;border-radius:999px;font-size:12px;background:#fff}
-</style>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Instagram Insights</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="favicon.ico" />
+  <style>
+    :root {
+      --bg:#fff; --fg:#111; --muted:#667085; --line:#ececec;
+      --card:#fafafa; --accent:#111;
+    }
+    html,body { margin:0; padding:0; background:var(--bg); color:var(--fg); font:14px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,Inter,Roboto,Arial,sans-serif }
+    .wrap { max-width:1040px; margin:24px auto 80px; padding:0 16px; }
+    h1 { font-size:32px; margin:0 0 8px }
+    .muted { color:var(--muted); font-size:12px; }
+    .bar { display:flex; gap:16px; flex-wrap:wrap; align-items:end; margin:20px 0 16px }
+    .box { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px }
+    .kpi { flex:1 1 220px }
+    .kpi h4 { margin:0 0 10px; font-weight:600 }
+    .kpi .val { font-size:24px; min-height:28px }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px }
+    .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px }
+    .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px }
+    .tabs { display:flex; gap:8px; margin:8px 0 16px }
+    .tab { padding:8px 12px; border:1px solid var(--line); border-radius:8px; cursor:pointer; background:var(--bg) }
+    .tab.active { background:var(--card) }
+    table { width:100%; border-collapse:collapse; }
+    th,td { border-bottom:1px solid var(--line); text-align:left; padding:10px 12px; vertical-align:top }
+    th { font-weight:600; background:#fcfcfc }
+    .note { font-size:12px; color:var(--muted); margin-top:8px }
+    .pill { display:inline-block; padding:2px 8px; background:#f4f4f4; border-radius:999px; margin-right:6px; }
+    .section-title { font-size:20px; margin:22px 0 10px; font-weight:700 }
+    .hidden { display:none }
+    .date-range { display:grid; grid-template-columns:1fr 1fr auto; gap:12px; align-items:end }
+    label { font-size:12px; color:var(--muted); display:block; margin-bottom:6px }
+    input[type="date"] { padding:10px 12px; border:1px solid var(--line); border-radius:8px; width:100% }
+    button { padding:10px 14px; border:1px solid var(--line); border-radius:8px; background:#111; color:#fff; cursor:pointer }
+  </style>
+</head>
 <body>
-<h1>Instagram Insights</h1>
-<p class="small">Window: <b>June 16, 2025</b> — <b>September 13, 2025</b>. Data aggregated on server, interactive range below is computed client-side from history.</p>
+  <div class="wrap">
+    <h1>Instagram Insights</h1>
+    <div class="muted">Window: (no history yet). Data aggregated on server; Overview uses live API for chosen dates.</div>
 
-<div class="card">
-  <h2>Date range</h2>
-  <form id="rng" class="grid2" onsubmit="evApply(event)">
-    <div><label for="dFrom">From</label><br><input id="dFrom" type="date"></div>
-    <div><label for="dTo">To</label><br><input id="dTo" type="date"></div>
-    <div><button id="btnApply" class="tab" type="submit">Submit</button></div>
-  </form>
+    <form id="rangeForm" class="box date-range" onsubmit="return onSubmit(event)">
+      <div>
+        <label for="from">From</label>
+        <input id="from" name="from" type="date" />
+      </div>
+      <div>
+        <label for="to">To</label>
+        <input id="to" name="to" type="date" />
+      </div>
+      <div><button type="submit">Submit</button></div>
+    </form>
 
-</div>
-
-<div class="tabs">
-  <div id="tab-overview" class="tab active" onclick="showTab('overview')">Overview</div>
-  <div id="tab-daily" class="tab" onclick="showTab('daily')">Daily</div>
-</div>
-
-<div id="view-overview">
-  <div class="kpi">
-    <div class="box"><b>Views</b><div id="kViews" class="mono">—</div></div>
-    <div class="box"><b>Reach</b><div id="kReach" class="mono">—</div></div>
-    <div class="box"><b>Profile visits</b><div id="kPV" class="mono">—</div></div>
-    <div class="box"><b>Interactions (total)</b><div id="kIT" class="mono">—</div></div>
-  </div>
-
-  <div class="card">
-    <h2>Interactions breakdown</h2>
-    <table>
-      <tr><th>Likes</th><th>Comments</th><th>Saves</th><th>Shares</th><th>Replies</th></tr>
-      <tr>
-        <td class="mono" id="iLikes"></td>
-        <td class="mono" id="iComments"></td>
-        <td class="mono" id="iSaves"></td>
-        <td class="mono" id="iShares"></td>
-        <td class="mono" id="iReplies"></td>
-      </tr>
-    </table>
-  </div>
-
-  <div class="grid2">
-    <div class="card">
-      <h2>Followers vs Non-followers (Reach)</h2>
-      <p><span class="badge">Followers</span> <span class="mono" id="fr_abs"></span> (<span class="mono" id="fr_pct"></span>%)</p>
-      <p><span class="badge">Non-followers</span> <span class="mono" id="nfr_abs"></span> (<span class="mono" id="nfr_pct"></span>%)</p>
+    <div class="tabs">
+      <div class="tab active" id="tab-ov" onclick="showTab('ov')">Overview</div>
+      <div class="tab" id="tab-daily" onclick="showTab('daily')">Daily</div>
     </div>
-    <div class="card">
-      <h2>Followers vs Non-followers (Views)</h2>
-      <p><span class="badge">Followers</span> <span class="mono" id="fv_abs"></span> (<span class="mono" id="fv_pct"></span>%)</p>
-      <p><span class="badge">Non-followers</span> <span class="mono" id="nfv_abs"></span> (<span class="mono" id="nfv_pct"></span>%)</p>
-    </div>
-  </div>
 
-  <div class="grid2">
-    <div class="card">
-      <h2>Views per Reach</h2>
-      <p><span class="badge">Followers</span> <span class="mono" id="vpr_f"></span></p>
-      <p><span class="badge">Non-followers</span> <span class="mono" id="vpr_nf"></span></p>
-    </div>
-    <div class="card">
-      <h2>By content type</h2>
-      <table id="tblSurf">
-        <thead><tr><th>Type</th><th>Reach</th><th>Views</th><th>Views/Reach</th></tr></thead>
+    <!-- OVERVIEW -->
+    <section id="ov">
+      <div class="grid4">
+        <div class="box kpi"><h4>Views</h4><div id="viewsTotal" class="val">—</div></div>
+        <div class="box kpi"><h4>Reach</h4><div id="reachTotal" class="val">—</div></div>
+        <div class="box kpi"><h4>Profile visits</h4><div id="visitsTotal" class="val">—</div></div>
+        <div class="box kpi"><h4>Interactions (total)</h4><div id="interTotal" class="val">—</div></div>
+      </div>
+
+      <div class="section-title">Interactions breakdown</div>
+      <div class="grid4">
+        <div class="box kpi"><h4>Likes</h4><div id="likesTotal" class="val">—</div></div>
+        <div class="box kpi"><h4>Comments</h4><div id="commentsTotal" class="val">—</div></div>
+        <div class="box kpi"><h4>Saves</h4><div id="savesTotal" class="val">—</div></div>
+        <div class="box kpi"><h4>Shares</h4><div id="sharesTotal" class="val">—</div></div>
+        <div class="box kpi"><h4>Replies</h4><div id="repliesTotal" class="val">—</div></div>
+      </div>
+
+      <div class="grid">
+        <div class="box">
+          <div class="section-title">Followers vs Non-followers (Reach)</div>
+          <div><span class="pill">Followers</span><span id="reachF">—</span> (<span id="reachFper">—</span>)</div>
+          <div style="margin-top:6px"><span class="pill">Non-followers</span><span id="reachNF">—</span> (<span id="reachNFper">—</span>)</div>
+        </div>
+        <div class="box">
+          <div class="section-title">Followers vs Non-followers (Views)</div>
+          <div><span class="pill">Followers</span><span id="viewsF">—</span> (<span id="viewsFper">—</span>)</div>
+          <div style="margin-top:6px"><span class="pill">Non-followers</span><span id="viewsNF">—</span> (<span id="viewsNFper">—</span>)</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="box">
+          <div class="section-title">Views per Reach</div>
+          <div><span class="pill">Followers</span><span id="vprF">—</span></div>
+          <div style="margin-top:6px"><span class="pill">Non-followers</span><span id="vprNF">—</span></div>
+          <div class="note">Calculated as Views / Reach per segment.</div>
+        </div>
+
+        <div class="box">
+          <div class="section-title">By content type</div>
+          <table id="byType"><thead><tr>
+            <th>Type</th><th>Reach</th><th>Views</th><th>Views/Reach</th>
+          </tr></thead><tbody></tbody></table>
+          <div class="note">Surfaces with both reach=0 and views=0 are hidden.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DAILY -->
+    <section id="daily" class="hidden">
+      <div class="section-title">Daily table</div>
+      <table id="dailyTbl">
+        <thead><tr>
+          <th>Date</th><th>Views</th><th>Reach</th><th>Profile visits</th><th>Interactions (total)</th>
+        </tr></thead>
         <tbody></tbody>
       </table>
-      <p class="small">Surfaces with both reach=0 and views=0 are hidden.</p>
-    </div>
+      <div class="note">Daily rows are loaded from data/daily_history.csv and filtered by selected range.</div>
+    </section>
   </div>
-</div>
-
-<div id="view-daily" class="hidden">
-  <div class="card">
-    <h2>Daily table</h2>
-    <table id="tblDaily">
-      <thead><tr>
-        <th>Date</th><th>Views</th><th>Reach</th><th>Profile visits</th><th>Interactions (total)</th>
-        <th>Followers — Views</th><th>Non-followers — Views</th>
-        <th>Followers — Reach</th><th>Non-followers — Reach</th>
-      </tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
 
 <script>
-// ==== серверное окно (из шаблона) ====
-const WIN_SINCE = "2025-06-16";
-const WIN_UNTIL = "2025-09-13";
+  // ====== CONFIG ======
+  // IMPORTANT: set to your Vercel function URL (no trailing slash)
+  const LIVE_URL   = "https://insta-live-api.vercel.app/api/insights";
+  const DEFAULT_TZ = "+03:00"; // Moscow
 
-// ==== URL твоего воркера ====
-const LIVE_URL = "https://insta-live-api.vercel.app/api/insights"; // ← подставь
-
-// ---------- Утилиты ----------
-const enFmt = (iso) => {
-  const d = new Date(iso+"T00:00:00Z");
-  const m = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  return m[d.getUTCMonth()]+" "+d.getUTCDate()+", "+d.getUTCFullYear();
-};
-const nz = v => (v && v!==0) ? (+v).toLocaleString("en-US") : "";
-
-// ---------- CSV loader (история) ----------
-async function loadCSV(url){
-  const resp = await fetch(url, {cache:"no-store"});
-  if(!resp.ok) throw 0;
-  let txt = await resp.text();
-  txt = txt.replace(/^\uFEFF/, "").trim();
-  const lines = txt.split(/\r?\n/);
-  if(!lines.length) return [];
-  const head = lines.shift().split(",").map(s=>s.trim());
-  return lines.filter(Boolean).map(l=>{
-    const c = l.split(",");
-    const row = {}; head.forEach((h,i)=> row[h] = (c[i]||"").trim());
-    return row;
-  });
-}
-async function safeLoad(urls){ for(const u of urls){ try { return await loadCSV(u); } catch(e){} } return []; }
-async function loadData(){
-  const daily   = await safeLoad(["data/daily_history.csv","out/daily.csv"]);
-  const follow  = await safeLoad(["data/daily_follow_breakdown_history.csv","out/daily_follow_breakdown.csv"]);
-  const surf    = await safeLoad(["data/daily_surface_breakdown_history.csv","out/daily_surface_breakdown.csv"]);
-  const inter   = await safeLoad(["data/daily_interactions_history.csv","out/daily_interactions.csv"]);
-  // totals_last нужны только как запасной вариант
-  const totalsLast  = await safeLoad(["data/totals_last.csv","out/totals.csv"]);
-  const followLast  = await safeLoad(["data/totals_follow_last.csv","out/totals_follow.csv"]);
-  const surfaceLast = await safeLoad(["data/totals_surface_last.csv","out/totals_surface.csv"]);
-  return {daily, follow, surf, inter, totalsLast, followLast, surfaceLast};
-}
-function defaultRange(daily){
-  if(!daily.length) return {from: WIN_SINCE, to: WIN_UNTIL};
-  const ds = daily.map(r=>r.date).sort();
-  return {from: ds[Math.max(0, ds.length-28)], to: ds[ds.length-1]};
-}
-function filterByRange(rows, from, to){ return rows.filter(r => (!from || r.date>=from) && (!to || r.date<=to)); }
-
-// ---------- Глобальное состояние ----------
-let G = {daily:[],follow:[],surf:[],inter:[], totalsLast:[],followLast:[],surfaceLast:[]};
-
-// ---------- Рендер D a i l y + «исторический» Overview (как база) ----------
-function renderHistoryOnly(from, to){
-  const D = filterByRange(G.daily, from, to);
-  const F = filterByRange(G.follow, from, to);
-  const S = filterByRange(G.surf, from, to);
-  const I = filterByRange(G.inter, from, to);
-
-  // суммируем только аддитивные
-  let sumViews=0,sumPV=0,sumIT=0,sumLikes=0,sumComments=0,sumSaves=0,sumShares=0,sumReplies=0;
-  D.forEach(r=>{ sumViews+=+(r.views||0); sumPV+=+(r.profile_views||0); sumIT+=+(r.interactions_total||0); });
-  I.forEach(r=>{ sumLikes+=+r.likes||0; sumComments+=+r.comments||0; sumSaves+=+r.saves||0; sumShares+=+r.shares||0; sumReplies+=+r.replies||0; });
-
-  // KPI (без reach — чтобы не вводить в заблуждение)
-  document.getElementById("kViews").textContent = nz(sumViews);
-  document.getElementById("kReach").textContent = "";               // уникальный за произвольный диапазон недоступен из истории
-  document.getElementById("kPV").textContent    = nz(sumPV);
-  document.getElementById("kIT").textContent    = nz(sumIT);
-  document.getElementById("iLikes").textContent    = nz(sumLikes);
-  document.getElementById("iComments").textContent = nz(sumComments);
-  document.getElementById("iSaves").textContent    = nz(sumSaves);
-  document.getElementById("iShares").textContent   = nz(sumShares);
-  document.getElementById("iReplies").textContent  = nz(sumReplies);
-
-  // Followers/Non-followers и Content type — считаем из history (если строк нет — оставим пусто)
-  let frAbs=0,nfrAbs=0,fvAbs=0,nfvAbs=0;
-  F.forEach(r=>{ const v=+r.views||0,re=+r.reach||0; if(r.segment==="FOLLOWER"){fvAbs+=v;frAbs+=re;} else if(r.segment==="NON_FOLLOWER"){nfvAbs+=v;nfrAbs+=re;} });
-  const frPct=(frAbs+nfrAbs)?(100*frAbs/(frAbs+nfrAbs)):0, fvPct=(fvAbs+nfvAbs)?(100*fvAbs/(fvAbs+nfvAbs)):0;
-  document.getElementById("fr_abs").textContent=nz(frAbs); document.getElementById("nfr_abs").textContent=nz(nfrAbs);
-  document.getElementById("fr_pct").textContent=frPct?frPct.toFixed(1):""; document.getElementById("nfr_pct").textContent=frPct?(100-frPct).toFixed(1):"";
-  document.getElementById("fv_abs").textContent=nz(fvAbs); document.getElementById("nfv_abs").textContent=nz(nfvAbs);
-  document.getElementById("fv_pct").textContent=fvPct?fvPct.toFixed(1):""; document.getElementById("nfv_pct").textContent=fvPct?(100-fvPct).toFixed(1):"";
-  document.getElementById("vpr_f").textContent = frAbs? (fvAbs/frAbs).toFixed(3):"";
-  document.getElementById("vpr_nf").textContent = nfrAbs? (nfvAbs/nfrAbs).toFixed(3):"";
-
-  const surfAgg={}; S.forEach(r=>{ const k=r.surface; const v=+r.views||0,re=+r.reach||0; const s=(surfAgg[k] ||= {views:0,reach:0}); s.views+=v; s.reach+=re; });
-  const tbodySurf=document.querySelector("#tblSurf tbody");
-  tbodySurf.innerHTML = Object.keys(surfAgg).map(k=>{
-    const s=surfAgg[k], vpr=s.reach? (s.views/s.reach):0;
-    if(!s.views && !s.reach) return "";
-    return `<tr><td>${k}</td><td class="mono">${nz(s.reach)}</td><td class="mono">${nz(s.views)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
-  }).join("") || "<tr><td colspan=4>No data</td></tr>";
-
-  // Daily
-  const dates = Array.from(new Set(D.map(r=>r.date))).sort();
-  const dmap={}; D.forEach(r=>{ dmap[r.date]={views:+r.views||0,reach:+r.reach||0,pv:+r.profile_views||0,it:+r.interactions_total||0}; });
-  const fV={},nfV={},fR={},nfR={}; filterByRange(G.follow, from,to).forEach(r=>{
-    const d=r.date, v=+r.views||0, re=+r.reach||0;
-    if(r.segment==="FOLLOWER"){ fV[d]=(fV[d]||0)+v; fR[d]=(fR[d]||0)+re; }
-    else if(r.segment==="NON_FOLLOWER"){ nfV[d]=(nfV[d]||0)+v; nfR[d]=(nfR[d]||0)+re; }
-  });
-  document.querySelector("#tblDaily tbody").innerHTML = dates.map(date=>{
-    const b=dmap[date]||{views:0,reach:0,pv:0,it:0};
-    return `<tr>
-      <td>${enFmt(date)}</td>
-      <td class="mono">${nz(b.views)}</td>
-      <td class="mono">${nz(b.reach)}</td>
-      <td class="mono">${nz(b.pv)}</td>
-      <td class="mono">${nz(b.it)}</td>
-      <td class="mono">${nz(fV[date]||0)}</td>
-      <td class="mono">${nz(nfV[date]||0)}</td>
-      <td class="mono">${nz(fR[date]||0)}</td>
-      <td class="mono">${nz(nfR[date]||0)}</td>
-    </tr>`;
-  }).join("") || "<tr><td colspan=9>No data</td></tr>";
-}
-
-// ---------- «Живой» запрос на воркер ----------
-async function fetchLive(from, to){
-  const u = new URL(LIVE_URL);
-  u.searchParams.set("since", from);
-  u.searchParams.set("until", to);
-  const r = await fetch(u.toString(), { mode: "cors" });
-  if (!r.ok) throw new Error("Live API failed");
-  return r.json();
-}
-function applyLiveOverview(resp){
-  const t = resp.totals || {};
-  // reach: exact ≤30 дней, approx >30 (пометку можно визуализировать тильдой)
-  const reachVal = (resp.meta && resp.meta.reach_kind === "approx") ? ("≈ " + (t.reach || 0)) : (t.reach ?? "");
-  document.getElementById("kViews").textContent = nz(t.views);
-  document.getElementById("kReach").textContent = (reachVal===""? "": (typeof reachVal==="string"? reachVal : nz(reachVal)));
-  document.getElementById("kPV").textContent    = nz(t.profile_views);
-  document.getElementById("kIT").textContent    = nz(t.total_interactions);
-  document.getElementById("iLikes").textContent    = nz(t.likes);
-  document.getElementById("iComments").textContent = nz(t.comments);
-  document.getElementById("iSaves").textContent    = nz(t.saves);
-  document.getElementById("iShares").textContent   = nz(t.shares);
-  document.getElementById("iReplies").textContent  = nz(t.replies);
-
-  // followers
-  const f = resp.follow || {};
-  const Fw = f.FOLLOWER || {views:0, reach:0}, NF = f.NON_FOLLOWER || {views:0, reach:0};
-  const frAbs=+Fw.reach||0, nfrAbs=+NF.reach||0, fvAbs=+Fw.views||0, nfvAbs=+NF.views||0;
-  const frPct=(frAbs+nfrAbs)?(100*frAbs/(frAbs+nfrAbs)):0, fvPct=(fvAbs+nfvAbs)?(100*fvAbs/(fvAbs+nfvAbs)):0;
-  document.getElementById("fr_abs").textContent=nz(frAbs); document.getElementById("nfr_abs").textContent=nz(nfrAbs);
-  document.getElementById("fr_pct").textContent=frPct?frPct.toFixed(1):""; document.getElementById("nfr_pct").textContent=frPct?(100-frPct).toFixed(1):"";
-  document.getElementById("fv_abs").textContent=nz(fvAbs); document.getElementById("nfv_abs").textContent=nz(nfvAbs);
-  document.getElementById("fv_pct").textContent=fvPct?fvPct.toFixed(1):""; document.getElementById("nfv_pct").textContent=fvPct?(100-fvPct).toFixed(1):"";
-  document.getElementById("vpr_f").textContent = frAbs? (fvAbs/frAbs).toFixed(3):"";
-  document.getElementById("vpr_nf").textContent = nfrAbs? (nfvAbs/nfrAbs).toFixed(3):"";
-
-  // content type
-  const s = resp.surface || {}; const tbody = document.querySelector("#tblSurf tbody");
-  const rows = Object.keys(s).map(k=>{
-    const x=s[k]||{}; const v=+x.views||0, re=+x.reach||0, vpr=re? v/re:0;
-    if(!v && !re) return "";
-    return `<tr><td>${k}</td><td class="mono">${nz(re)}</td><td class="mono">${nz(v)}</td><td class="mono">${vpr? vpr.toFixed(3):""}</td></tr>`;
-  }).join("");
-  tbody.innerHTML = rows || "<tr><td colspan=4>No data</td></tr>";
-}
-
-// ---------- Обработчик Submit ----------
-async function evApply(e){
-  e.preventDefault();
-  const from = document.getElementById("dFrom").value || WIN_SINCE;
-  const to   = document.getElementById("dTo").value   || WIN_UNTIL;
-
-  // 1) Перерисовываем Daily и «базовый» Overview из истории (без reach)
-  renderHistoryOnly(from, to);
-
-  // 2) Пробуем «живой» вызов — обновит Overview точными totals и разрезами
-  const btn = document.getElementById("btnApply");
-  try {
-    btn.disabled = true;
-    const live = await fetchLive(from, to);
-    applyLiveOverview(live);
-  } catch (err) {
-    console.warn("Live API failed:", err);
-    // остаёмся на истории — это безопасный фоллбек
-  } finally {
-    btn.disabled = false;
+  // ====== UTILS ======
+  const $ = (sel) => document.querySelector(sel);
+  const setText = (id, v) => { const el = document.getElementById(id); if (!el) return; el.textContent = (v===0 || v) ? new Intl.NumberFormat('en-US').format(v) : "—"; };
+  const fmtPct = (num) => (num || num===0) ? (num.toFixed(1) + "%") : "—";
+  function ymd(d) {
+    const z = (n) => String(n).padStart(2,"0");
+    return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate());
   }
-}
+  function mdY(d) {
+    return new Date(d).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  }
+  async function fetchText(url) {
+    const r = await fetch(url, { cache:"no-cache" });
+    if (!r.ok) throw new Error("HTTP "+r.status);
+    return await r.text();
+  }
+  async function safeLoad(path) {
+    try { return await fetchText(path); }
+    catch(e) {
+      const alt = path.replace(/^data\//,"");
+      return await fetchText(alt);
+    }
+  }
+  function parseCSV(t) {
+    const lines = t.trim().split(/\r?\n/);
+    const head = lines.shift().split(",");
+    return lines.map(row => {
+      const a = []; let s = "", q = false;
+      for (let i=0;i<row.length;i++) {
+        const c = row[i];
+        if (c === '"') { q = !q; continue; }
+        if (c === ',' && !q) { a.push(s); s=""; continue; }
+        s += c;
+      }
+      a.push(s);
+      const o={}; head.forEach((h, i)=> o[h.trim()] = (a[i]||"").trim());
+      return o;
+    });
+  }
 
-// ---------- Инициализация ----------
-function showTab(name){
-  document.getElementById("tab-overview").classList.toggle("active", name==="overview");
-  document.getElementById("tab-daily").classList.toggle("active", name==="daily");
-  document.getElementById("view-overview").classList.toggle("hidden", name!=="overview");
-  document.getElementById("view-daily").classList.toggle("hidden", name!=="daily");
-}
-loadData().then(({daily,follow,surf,inter,totalsLast,followLast,surfaceLast})=>{
-  G.daily=daily; G.follow=follow; G.surf=surf; G.inter=inter;
-  G.totalsLast=totalsLast; G.followLast=followLast; G.surfaceLast=surfaceLast;
-  const rng = defaultRange(G.daily);
-  document.getElementById("dFrom").value = rng.from;
-  document.getElementById("dTo").value   = rng.to;
-  // стартовый рендер: как история
-  renderHistoryOnly(rng.from, rng.to);
-});
+  // ====== TABS ======
+  function showTab(name) {
+    $("#ov").classList.toggle("hidden", name!=="ov");
+    $("#daily").classList.toggle("hidden", name!=="daily");
+    $("#tab-ov").classList.toggle("active", name==="ov");
+    $("#tab-daily").classList.toggle("active", name==="daily");
+  }
+
+  // ====== DEFAULT DATES (last 28 days within history window if available) ======
+  const historyWindow = {
+    min: '',
+    max: ''
+  };
+  (function setDefaults(){
+    const to = historyWindow.max ? new Date(historyWindow.max+"T00:00:00Z") : new Date();
+    const from = new Date(to.getTime() - 27*86400000);
+    $("#from").value = ymd(from);
+    $("#to").value = ymd(to);
+    // Initial paint
+    fetchLive();
+    fillDaily();
+  })();
+
+  // ====== LIVE OVERVIEW ======
+  async function fetchLive() {
+    const since = $("#from").value;
+    const until = $("#to").value;
+    try {
+      const url = new URL(LIVE_URL);
+      url.searchParams.set("since", since);
+      url.searchParams.set("until", until);
+      url.searchParams.set("tz", DEFAULT_TZ);
+      const r = await fetch(url, { cache:"no-cache" });
+      if (!r.ok) throw new Error("HTTP "+r.status);
+      const live = await r.json();
+
+      const t = live.totals || {};
+      const viewsTotal  = (t.content_views ?? t.views ?? 0);
+      const reachTotal  = (t.reach ?? 0);
+      const visitsTotal = (t.profile_views ?? 0);
+      const interTotal  = (t.total_interactions ?? 0);
+
+      setText("viewsTotal",  viewsTotal || "");
+      setText("reachTotal",  reachTotal || "");
+      setText("visitsTotal", visitsTotal || "");
+      setText("interTotal", interTotal || "");
+      setText("likesTotal",     t.likes || "");
+      setText("commentsTotal",  t.comments || "");
+      setText("savesTotal",     t.saves || "");
+      setText("sharesTotal",    t.shares || "");
+      setText("repliesTotal",   t.replies || "");
+
+      const F = live.follow || {};
+      const fviews = (F.FOLLOWER?.views||0), nfviews = (F.NON_FOLLOWER?.views||0);
+      const freach = (F.FOLLOWER?.reach||0),  nfreach = (F.NON_FOLLOWER?.reach||0);
+      setText("viewsF", fviews || ""); setText("viewsNF", nfviews || "");
+      setText("reachF", freach || ""); setText("reachNF", nfreach || "");
+
+      const vfper = viewsTotal ? (fviews*100/viewsTotal) : null;
+      const vnfper= viewsTotal ? (nfviews*100/viewsTotal): null;
+      const rfper = reachTotal ? (freach*100/reachTotal) : null;
+      const rnfper= reachTotal ? (nfreach*100/reachTotal): null;
+      document.getElementById("viewsFper").textContent = (vfper||vfper===0)?fmtPct(vfper):"—";
+      document.getElementById("viewsNFper").textContent= (vnfper||vnfper===0)?fmtPct(vnfper):"—";
+      document.getElementById("reachFper").textContent = (rfper||rfper===0)?fmtPct(rfper):"—";
+      document.getElementById("reachNFper").textContent= (rnfper||rnfper===0)?fmtPct(rnfper):"—";
+
+      const vprF  = freach ? (fviews/freach) : null;
+      const vprNF = nfreach? (nfviews/nfreach): null;
+      setText("vprF", vprF || ""); setText("vprNF", vprNF || "");
+
+      const mapName = (s)=>{
+        const m = {
+          "REEL":"REEL","STORY":"STORY","FEED":"POST","AD":"AD","CAROUSEL_CONTAINER":"CAROUSEL_CONTAINER","POST":"POST","REELS":"REEL"
+        };
+        return m[s]||s;
+      };
+      const tbody = $("#byType tbody"); tbody.innerHTML = "";
+      const surf = live.surface || {};
+      Object.keys(surf).forEach(k=>{
+        const row = surf[k];
+        const v = row.views||0, r = row.reach||0;
+        if (!v && !r) return;
+        const tr = document.createElement("tr");
+        const ratio = (r? (v/r): 0);
+        tr.innerHTML = `<td>${mapName(k)}</td><td>${Intl.NumberFormat('en-US').format(r)}</td><td>${Intl.NumberFormat('en-US').format(v)}</td><td>${ratio?ratio.toFixed(3):"0.000"}</td>`;
+        tbody.appendChild(tr);
+      });
+    } catch(e) {
+      console.warn("Live API failed:", e.message);
+      ["viewsTotal","reachTotal","visitsTotal","interTotal","likesTotal","commentsTotal","savesTotal","sharesTotal","repliesTotal","viewsF","viewsNF","reachF","reachNF","viewsFper","viewsNFper","reachFper","reachNFper","vprF","vprNF"].forEach(id=>setText(id,""));
+      $("#byType tbody").innerHTML="";
+    }
+  }
+
+  // ====== DAILY from CSV ======
+  async function fillDaily() {
+    const since = $("#from").value, until = $("#to").value;
+    try {
+      const txt = await safeLoad("data/daily_history.csv");
+      const rows = parseCSV(txt);
+      const tbody = $("#dailyTbl tbody"); tbody.innerHTML = "";
+      const s = new Date(since+"T00:00:00"), u = new Date(until+"T23:59:59");
+      const nf = new Intl.NumberFormat('en-US');
+      rows.forEach(r=>{
+        const d = new Date(r.date+"T00:00:00");
+        if (d < s || d > u) return;
+        const tr = document.createElement("tr");
+        const V = (r.views && +r.views) || 0;
+        const R = (r.reach && +r.reach) || 0;
+        const P = (r.profile_views && +r.profile_views) || 0;
+        const I = (r.interactions_total && +r.interactions_total) || 0;
+        function cell(x) { return x? nf.format(+x) : "" }
+        tr.innerHTML = `<td>${mdY(r.date)}</td>
+                        <td>${cell(V)}</td>
+                        <td>${cell(R)}</td>
+                        <td>${cell(P)}</td>
+                        <td>${cell(I)}</td>`;
+        tbody.appendChild(tr);
+      });
+    } catch(e) {
+      console.warn("Daily CSV load failed:", e.message);
+      $("#dailyTbl tbody").innerHTML = "";
+    }
+  }
+
+  function onSubmit(ev) {
+    ev.preventDefault();
+    fetchLive();
+    fillDaily();
+    return false;
+  }
 </script>
-
-
 </body>
+</html>
