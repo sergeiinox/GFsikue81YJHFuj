@@ -29,7 +29,7 @@
   .note { color:var(--muted); font-size:12px; margin-top:8px; }
   .date-range { display:flex; gap:8px; margin:0 0; flex-wrap:wrap; align-items:flex-end}
   input[type="date"] { padding:8px 10px; border:1px solid var(--border); border-radius:12px; background:#fff; }
-  button.submit { padding:6px 12px; border-radius:12px; border:1px solid var(--border); background:var(--accent); color:#fff; }
+  button.submit { padding:8px 12px; border-radius:12px; border:1px solid var(--border); background:var(--accent); color:#fff; }
 </style>
 </head>
 <body>
@@ -87,7 +87,7 @@
       <!-- Views per user by follower type -->
       <div class="card" style="grid-column: span 6;">
         <div class="section-title">Views per user</div>
-        <div id="vpuBox" style="margin-top:0;"></div>
+        <div class="grid" id="vpuBox" style="margin-top:0;"></div>
       </div>
 
       <!-- By content type (без выравнивания reach; reach=0 -> пусто) -->
@@ -97,7 +97,6 @@
           <thead><tr><th>Type</th><th>Reach</th><th>Views</th><th>Views/Reach</th></tr></thead>
           <tbody></tbody>
         </table>
-        <div class="note">Per-type reach is non-deduplicated across types and may be suppressed on small cells. Cells with reach=0 are blank.</div>
       </div>
     </div>
   </section>
