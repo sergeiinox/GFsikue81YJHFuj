@@ -12,14 +12,14 @@
   h1 { font-size:28px; margin:0 0 8px; }
   .window-note { color:var(--muted); font-size:12px; margin-bottom:18px; }
   .card { background:var(--card); border:1px solid var(--card); border-radius:16px; padding:12px 16px; }
-  .tabs { display:flex; gap:8px; margin:16px 0 0; flex-wrap:wrap; }
-  .tab { padding:8px 16px; border:1px solid var(--border); border-radius:999px; cursor:pointer; user-select:none; }
+  .tabs { display:flex; gap:8px; margin:16px 0 4px; flex-wrap:wrap; }
+  .tab { padding:4px 8px; border:1px solid var(--border); border-radius:999px; cursor:pointer; user-select:none; }
   .tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
   .hidden { display:none; }
   .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:8px; }
   .kpi { display:flex; flex-direction:column; gap:2px; }
   .kpi .label { color:var(--muted); font-size:14px; }
-  .kpi .value { font-size:24px; font-weight:600; }
+  .kpi .value { font-size:20px; font-weight:600; }
   table { width:100%; border-collapse:collapse; }
   th, td { padding:10px 10px; border-top:1px solid var(--border); text-align:left; vertical-align:top; }
   th { font-weight:600; color:var(--muted); background:#fafafa; }
@@ -27,9 +27,9 @@
   .pill { display:inline-block; font-size:14px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#fff; }
   .badge-partial { display:inline-flex; align-items:center; gap:6px; font-size:11px; line-height:1; padding:4px 8px; border-radius:999px; background:#FEF3C7; color:#92400E; border:1px solid #FEF3C7; cursor:help; }
   .note { color:var(--muted); font-size:12px; margin-top:8px; }
-  .date-range { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
+  .date-range { display:flex; gap:16px; margin:0 0; flex-wrap:wrap; }
   input[type="date"] { padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:#fff; }
-  button.submit { padding:8px 16px; border-radius:12px; border:1px solid var(--border); background:var(--accent); color:#fff; }
+  button.submit { padding:4px 8px; border-radius:8px; border:1px solid var(--border); background:var(--accent); color:#fff; }
 </style>
 </head>
 <body>
@@ -37,12 +37,12 @@
   <h1>Instagram Insights</h1>
   <div class="window-note">Window: September 17, 2025 — September 17, 2025. Data aggregated on server; daily tabs use history CSV.</div>
 
-  <div class="card" style="margin-bottom:16px;">
+  <div class="card" style="margin-bottom:8px;">
     <div class="section-title">Date range</div>
     <form id="rangeForm" class="date-range">
       <div><div class="label" style="color:#6b7280;font-size:12px;margin-bottom:6px;">From</div><input id="fromInput" type="date"/></div>
       <div><div class="label" style="color:#6b7280;font-size:12px;margin-bottom:6px;">To</div><input id="toInput" type="date"/></div>
-      <div><button class="submit" type="submit">Submit</button></div>
+      <div><button class="button.submit" type="submit">Submit</button></div>
     </form>
     <div class="tabs">
       <div class="tab active" id="tabOverview">Overview</div>
@@ -63,7 +63,7 @@
 
       <div class="card" id="interBoxCard" style="grid-column: span 12;">
         <div class="section-title">Interactions breakdown</div>
-        <div class="grid" style="margin-top:8px;">
+        <div class="grid" style="margin-top:0;">
           <div class="kpi" style="grid-column: span 2;"><div class="label">Likes</div><div class="value" id="likes"> </div></div>
           <div class="kpi" style="grid-column: span 2;"><div class="label">Comments</div><div class="value" id="comments"> </div></div>
           <div class="kpi" style="grid-column: span 2;"><div class="label">Saves</div><div class="value" id="saves"> </div></div>
