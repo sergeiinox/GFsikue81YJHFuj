@@ -27,7 +27,7 @@
   .pill { display:inline-block; font-size:14px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#fff; }
   .badge-partial { display:inline-flex; align-items:center; gap:6px; font-size:11px; line-height:1; padding:4px 8px; border-radius:999px; background:#FEF3C7; color:#92400E; border:1px solid #FEF3C7; cursor:help; }
   .note { color:var(--muted); font-size:12px; margin-top:8px; }
-  .date-range { display:flex; gap:16px; margin:0 0; flex-wrap:wrap; }
+  .date-range { display:flex; gap:8px; margin:0 0; flex-wrap:wrap; }
   input[type="date"] { padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:#fff; }
   button.submit { padding:4px 8px; border-radius:8px; border:1px solid var(--border); background:var(--accent); color:#fff; }
 </style>
@@ -42,7 +42,7 @@
     <form id="rangeForm" class="date-range">
       <div><div class="label" style="color:#6b7280;font-size:12px;margin-bottom:6px;">From</div><input id="fromInput" type="date"/></div>
       <div><div class="label" style="color:#6b7280;font-size:12px;margin-bottom:6px;">To</div><input id="toInput" type="date"/></div>
-      <div><button class="button.submit" type="submit">Submit</button></div>
+      <div><button class="submit" type="submit">Submit</button></div>
     </form>
     <div class="tabs">
       <div class="tab active" id="tabOverview">Overview</div>
