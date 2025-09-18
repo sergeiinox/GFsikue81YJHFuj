@@ -10,21 +10,21 @@
   body { margin:0; padding:24px; font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; color:var(--fg); background:var(--bg); }
   h1 { font-size:28px; margin:0 0 8px; }
   .window-note { color:var(--muted); font-size:12px; margin-bottom:18px; }
-  .card { background:var(--card); border:1px solid var(--card); border-radius:16px; padding:16px; }
+  .card { background:var(--card); border:1px solid var(--card); border-radius:16px; padding:12px 16px; }
   .tabs { display:flex; gap:8px; margin:16px 0 0; flex-wrap:wrap; }
   .tab { padding:8px 16px; border:1px solid var(--border); border-radius:999px; cursor:pointer; user-select:none; }
   .tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
   .hidden { display:none; }
   .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:8px; }
-  .kpi { display:flex; flex-direction:column; gap:4px; }
+  .kpi { display:flex; flex-direction:column; gap:2px; }
   .kpi .label { color:var(--muted); font-size:14px; }
-  .kpi .value { font-size:24px; font-weight:700; }
+  .kpi .value { font-size:24px; font-weight:600; }
   table { width:100%; border-collapse:collapse; }
   th, td { padding:10px 10px; border-top:1px solid var(--border); text-align:left; vertical-align:top; }
   th { font-weight:600; color:var(--muted); background:#fafafa; }
-  .section-title { font-weight:600; margin:0 0; display:inline-flex; align-items:center; gap:8px; }
+  .section-title { font-weight:600; margin:0 0 16px; display:inline-flex; align-items:center; gap:4px; }
   .pill { display:inline-block; font-size:14px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#fff; }
-  .badge-partial { display:inline-flex; align-items:center; gap:6px; font-size:11px; line-height:1; padding:4px 8px; border-radius:999px; background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; cursor:help; }
+  .badge-partial { display:inline-flex; align-items:center; gap:6px; font-size:11px; line-height:1; padding:4px 8px; border-radius:999px; background:#FEF3C7; color:#92400E; border:1px solid #FEF3C7; cursor:help; }
   .note { color:var(--muted); font-size:12px; margin-top:8px; }
   .date-range { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
   input[type="date"] { padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:#fff; }
@@ -73,13 +73,13 @@
       <!-- Followers vs Non-followers (Views) -->
       <div class="card" style="grid-column: span 6;">
         <div class="section-title" id="followViewsTitle">Followers vs Non-followers (Views)</div>
-        <div id="followViewsBox" class="note">—</div>
+        <div id="followViewsBox" class="value">—</div>
       </div>
 
       <!-- Followers vs Non-followers (Reach) -->
       <div class="card" style="grid-column: span 6;">
         <div class="section-title" id="followReachTitle">Followers vs Non-followers (Reach)</div>
-        <div id="followReachBox" class="note">—</div>
+        <div id="followReachBox" class="value">—</div>
       </div>
 
       <!-- Views per user by follower type -->
@@ -219,22 +219,22 @@ function fillOverview(live){
 
   // Views: скрывать сегмент, если 0
   const partsViews = [];
-  if((f.views||0)>0){ partsViews.push(`<div class="kpi" style="grid-column:span 6;"><span class="pill">Followers</span><div class="note">${fmtInt(f.views)} (${(V>0?(f.views/V*100):0).toFixed(1)}%)</div></div>`); }
-  if((nf.views||0)>0){ partsViews.push(`<div class="kpi" style="grid-column:span 6;"><span class="pill">Non-followers</span><div class="note">${fmtInt(nf.views)} (${(V>0?(nf.views/V*100):0).toFixed(1)}%)</div></div>`); }
+  if((f.views||0)>0){ partsViews.push(`<div class="kpi" style="grid-column:span 6;"><span class="label">Followers</span><div class="value">${fmtInt(f.views)} (${(V>0?(f.views/V*100):0).toFixed(1)}%)</div></div>`); }
+  if((nf.views||0)>0){ partsViews.push(`<div class="kpi" style="grid-column:span 6;"><span class="label">Non-followers</span><div class="value">${fmtInt(nf.views)} (${(V>0?(nf.views/V*100):0).toFixed(1)}%)</div></div>`); }
   $('#followViewsBox').innerHTML = partsViews.length ? `<div class="grid">${partsViews.join("")}</div>` : '—';
 
   // Reach: скрывать сегмент, если 0
   const partsReach = [];
-  if((f.reach||0)>0){ partsReach.push(`<div class="kpi" style="grid-column:span 6;"><span class="pill">Followers</span><div class="note">${fmtInt(f.reach)} (${(R>0?(f.reach/R*100):0).toFixed(1)}%)</div></div>`); }
-  if((nf.reach||0)>0){ partsReach.push(`<div class="kpi" style="grid-column:span 6;"><span class="pill">Non-followers</span><div class="note">${fmtInt(nf.reach)} (${(R>0?(nf.reach/R*100):0).toFixed(1)}%)</div></div>`); }
+  if((f.reach||0)>0){ partsReach.push(`<div class="kpi" style="grid-column:span 6;"><span class="label">Followers</span><div class="value">${fmtInt(f.reach)} (${(R>0?(f.reach/R*100):0).toFixed(1)}%)</div></div>`); }
+  if((nf.reach||0)>0){ partsReach.push(`<div class="kpi" style="grid-column:span 6;"><span class="label">Non-followers</span><div class="value">${fmtInt(nf.reach)} (${(R>0?(nf.reach/R*100):0).toFixed(1)}%)</div></div>`); }
   $('#followReachBox').innerHTML = partsReach.length ? `<div class="grid">${partsReach.join("")}</div>` : '—';
 
   // Views per user (views/reach) по типам подписчиков, скрывать, если 0/NaN
   const vpu = [];
   const vprF  = (f.reach>0)  ? (f.views / f.reach) : 0;
   const vprNF = (nf.reach>0) ? (nf.views / nf.reach) : 0;
-  if(vprF > 0){ vpu.push(`<div class="kpi"><div class="pill">Followers</div><div class="value">${fmt2(vprF)}</div></div>`); }
-  if(vprNF> 0){ vpu.push(`<div class="kpi"><div class="pill">Non-followers</div><div class="value">${fmt2(vprNF)}</div></div>`); }
+  if(vprF > 0){ vpu.push(`<div class="kpi"><div class="label">Followers</div><div class="value">${fmt2(vprF)}</div></div>`); }
+  if(vprNF> 0){ vpu.push(`<div class="kpi"><div class="label">Non-followers</div><div class="value">${fmt2(vprNF)}</div></div>`); }
   $('#vpuBox').innerHTML = vpu.join("") || '—';
 
   // By content type: без выравнивания reach; reach=0 -> пусто; ratio показываем только если reach>0
