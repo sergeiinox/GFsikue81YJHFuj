@@ -27,7 +27,7 @@
   .pill { display:inline-block; font-size:14px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#fff; }
   .badge-partial { display:inline-flex; align-items:center; gap:6px; font-size:11px; line-height:1; padding:4px 8px; border-radius:999px; background:#FEF3C7; color:#92400E; border:1px solid #FEF3C7; cursor:help; }
   .note { color:var(--muted); font-size:12px; margin-top:8px; }
-  .date-range { display:flex; gap:8px; margin:0 0; flex-wrap:wrap; }
+  .date-range { display:flex; gap:8px; margin:0 0; flex-wrap:wrap; align-content:flex-end}
   input[type="date"] { padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:#fff; }
   button.submit { padding:4px 8px; border-radius:8px; border:1px solid var(--border); background:var(--accent); color:#fff; }
 </style>
@@ -40,8 +40,8 @@
   <div class="card" style="margin-bottom:8px;">
     <div class="section-title">Date range</div>
     <form id="rangeForm" class="date-range">
-      <div><div class="label" style="color:#6b7280;font-size:12px;margin-bottom:6px;">From</div><input id="fromInput" type="date"/></div>
-      <div><div class="label" style="color:#6b7280;font-size:12px;margin-bottom:6px;">To</div><input id="toInput" type="date"/></div>
+      <div><div class="label" style="color:#6b7280;font-size:12px;margin-bottom:6px;"></div><input id="fromInput" type="date"/></div>
+      <div><div class="label" style="color:#6b7280;font-size:12px;margin-bottom:6px;"></div><input id="toInput" type="date"/></div>
       <div><button class="submit" type="submit">Submit</button></div>
     </form>
     <div class="tabs">
@@ -74,13 +74,13 @@
 
       <!-- Followers vs Non-followers (Views) -->
       <div class="card" style="grid-column: span 6;">
-        <div class="section-title" id="followViewsTitle">Followers vs Non-followers (Views)</div>
+        <div class="section-title" id="followViewsTitle">Views</div>
         <div id="followViewsBox" class="value">—</div>
       </div>
 
       <!-- Followers vs Non-followers (Reach) -->
       <div class="card" style="grid-column: span 6;">
-        <div class="section-title" id="followReachTitle">Followers vs Non-followers (Reach)</div>
+        <div class="section-title" id="followReachTitle">Reach</div>
         <div id="followReachBox" class="value">—</div>
       </div>
 
