@@ -1,414 +1,424 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Instagram Insights</title>
-  <style>
-    :root {
-      --bg: #f6f7f9;
-      --card-bg: #fff;
-      --text: #111827;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-      --pill: #0b1324;
-    }
-    * { box-sizing: border-box; }
-    html,body { margin:0; padding:0; background:var(--bg); color:var(--text); font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; }
-    .wrap { max-width:1060px; margin:24px auto 64px; padding:0 16px; }
-
-    h1 { font-size:28px; margin:0 0 8px; }
-    .dim { color:var(--muted); font-size:12px; }
-
-    /* cards */
-    .card { background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:16px; }
-    .grid { display:grid; gap:12px; }
-    .grid.cols-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
-    .grid.cols-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
-    .metric .name { color:var(--muted); font-size:12px; }
-    .metric .val { font-size:22px; font-weight:600; margin-top:4px; }
-
-    /* tabs */
-    .tabs { display:flex; gap:12px; margin-top:16px; }
-    .tab { background:#fff; border:1px solid var(--border); color:#0f172a; border-radius:999px; padding:8px 14px; cursor:pointer; }
-    .tab.active { background:var(--pill); color:#fff; }
-    .section { display:none; margin-top:16px; }
-    .section.active { display:block; }
-
-    /* date-range bar */
-    .bar { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-    .range { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-    .range-label { font-weight:600; font-size:16px; }
-    .range-group { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--border); border-radius:10px; padding:6px 10px; }
-    .range-group input[type="date"] {
-      border: none; outline: none; background: transparent; padding: 6px 4px;
-      font-size:14px; color:var(--text);
-    }
-    .range-sep { color: var(--muted); }
-    .submit-btn {
-      background: var(--pill); color: #fff; border:0; border-radius:10px; padding:10px 14px;
-      cursor:pointer; font-weight:600;
-    }
-
-    /* badges */
-    .badge { display:inline-block; padding:6px 10px; background:#eef2ff; color:#1e3a8a; border-radius:999px; font-size:12px; white-space:nowrap; }
-
-    /* tables */
-    .table-card { padding:0; }
-    .table-wrap { max-height:60vh; overflow:auto; border-radius:12px; }
-    table { width:100%; border-collapse:collapse; background:#fff; }
-    thead th {
-      position:sticky; top:0; z-index:1;
-      background:#fff; border-bottom:1px solid var(--border);
-      color:var(--muted); font-weight:600; text-align:left; padding:10px 12px; font-size:12px;
-    }
-    tbody td { padding:10px 12px; border-bottom:1px solid var(--border); }
-    tbody tr:last-child td { border-bottom:none; }
-
-    /* overview layout */
-    .overview-grid { display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; }
-    @media (max-width:900px){
-      .grid.cols-4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
-      .overview-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Instagram Insights</title>
+<style>
+  :root { --fg:#0f172a; --muted:#6b7280; --card:#ffffff; --bg:#fafafa; --accent:#111827; --border:#e5e7eb; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial; color:var(--fg); background:var(--bg); }
+  h1 { font-size:28px; margin:0 0 8px; }
+  .window-note { color:var(--muted); font-size:12px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; }
+  .tabs { display:flex; gap:10px; margin:8px 0 16px; flex-wrap:wrap; }
+  .tab { padding:8px 12px; border:1px solid var(--border); border-radius:999px; cursor:pointer; user-select:none; }
+  .tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .hidden { display:none; }
+  .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:14px; }
+  .kpi { display:flex; flex-direction:column; gap:6px; }
+  .kpi .label { color:var(--muted); font-size:12px; }
+  .kpi .value { font-size:22px; font-weight:600; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { padding:10px 10px; border-top:1px solid var(--border); text-align:left; vertical-align:top; }
+  th { font-weight:600; color:var(--muted); background:#fafafa; }
+  .section-title { font-weight:600; margin:10px 0; display:inline-flex; align-items:center; gap:8px; }
+  .pill { display:inline-block; font-size:12px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#fff; }
+  .badge-partial { display:inline-flex; align-items:center; gap:6px; font-size:11px; line-height:1; padding:4px 8px; border-radius:999px; background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; cursor:help; }
+  .note { color:var(--muted); font-size:12px; margin-top:8px; }
+  .date-range { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
+  input[type="date"] { padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:#fff; }
+  button.submit { padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:var(--accent); color:#fff; }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Instagram Insights</h1>
-    <div class="dim">Data are aggregated from historical CSV. Choose any date range to update cards and tables.</div>
+  <h1>Instagram Insights</h1>
+  <div class="window-note">Window: September 17, 2025 — September 17, 2025. Data aggregated on server; daily tabs use history CSV.</div>
 
-    <!-- Date range + tabs -->
-    <div class="card" style="margin-top:16px;">
-      <form id="controls" class="bar" onsubmit="apply(event)">
-        <div class="range">
-          <span class="range-label">Date range</span>
-          <div class="range-group" title="Pick start and end dates">
-            <input id="from" type="date" />
-            <span class="range-sep">—</span>
-            <input id="to" type="date" />
-          </div>
-          <button class="submit-btn" type="submit">Submit</button>
-        </div>
-        <div class="tabs" role="tablist" aria-label="Sections">
-          <button type="button" class="tab active" data-tab="overview" onclick="showTab('overview',this)">Overview</button>
-          <button type="button" class="tab" data-tab="base" onclick="showTab('base',this)">Base</button>
-          <button type="button" class="tab" data-tab="viewers" onclick="showTab('viewers',this)">Viewers</button>
-          <button type="button" class="tab" data-tab="content" onclick="showTab('content',this)">Content</button>
-          <button type="button" class="tab" data-tab="interactions" onclick="showTab('interactions',this)">Interactions</button>
-        </div>
-      </form>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="section-title">Date range</div>
+    <form id="rangeForm" class="date-range">
+      <div><div class="label" style="color:#6b7280;font-size:12px;margin-bottom:6px;">From</div><input id="fromInput" type="date"/></div>
+      <div><div class="label" style="color:#6b7280;font-size:12px;margin-bottom:6px;">To</div><input id="toInput" type="date"/></div>
+      <div><button class="submit" type="submit">Submit</button></div>
+    </form>
+    <div class="tabs">
+      <div class="tab active" id="tabOverview">Overview</div>
+      <div class="tab" id="tabBase">Base</div>
+      <div class="tab" id="tabViewers">Viewers</div>
+      <div class="tab" id="tabContent">Content</div>
+      <div class="tab" id="tabInteractions">Interactions</div>
     </div>
-
-    <!-- OVERVIEW -->
-    <section id="overview" class="section active">
-      <div class="overview-grid">
-        <div class="card">
-          <div class="grid cols-4">
-            <div class="metric"><div class="name">Views</div><div id="ov-views" class="val">—</div></div>
-            <div class="metric"><div class="name">Reach</div><div id="ov-reach" class="val">—</div></div>
-            <div class="metric"><div class="name">Profile visits</div><div id="ov-profile" class="val">—</div></div>
-            <div class="metric"><div class="name">Interactions (total)</div><div id="ov-int" class="val">—</div></div>
-          </div>
-
-          <div id="ov-int-break" style="margin-top:12px;">
-            <div class="block-title">Interactions breakdown</div>
-            <div class="grid cols-4">
-              <div class="metric"><div class="name">Likes</div><div id="ov-likes" class="val">—</div></div>
-              <div class="metric"><div class="name">Comments</div><div id="ov-comments" class="val">—</div></div>
-              <div class="metric"><div class="name">Saves</div><div id="ov-saves" class="val">—</div></div>
-              <div class="metric"><div class="name">Shares</div><div id="ov-shares" class="val">—</div></div>
-              <div class="metric"><div class="name">Replies</div><div id="ov-replies" class="val">—</div></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="block-title">Views per user (Followers / Non-followers)</div>
-          <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
-            <span class="badge" style="min-width:88px; text-align:center;">Followers</span>
-            <div id="ov-vpu-f" class="val">—</div>
-          </div>
-          <div style="display:flex; gap:12px; align-items:center;">
-            <span class="badge" style="min-width:112px; text-align:center; white-space:nowrap;">Non-followers</span>
-            <div id="ov-vpu-nf" class="val">—</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid cols-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px;">
-        <div class="card">
-          <div class="block-title">Followers vs Non-followers (Views)</div>
-          <div class="grid cols-2">
-            <div class="metric"><div class="name">Followers</div><div id="ov-fv" class="val">—</div></div>
-            <div class="metric"><div class="name">Non-followers</div><div id="ov-nfv" class="val">—</div></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="block-title">Followers vs Non-followers (Reach)</div>
-          <div class="grid cols-2">
-            <div class="metric"><div class="name">Followers</div><div id="ov-fr" class="val">—</div></div>
-            <div class="metric"><div class="name">Non-followers</div><div id="ov-nfr" class="val">—</div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:12px;">
-        <div class="block-title">By content type</div>
-        <div class="grid cols-3">
-          <div class="metric"><div class="name">Post (views)</div><div id="ct-post-v" class="val">—</div></div>
-          <div class="metric"><div class="name">Story (views)</div><div id="ct-story-v" class="val">—</div></div>
-          <div class="metric"><div class="name">Reel (views)</div><div id="ct-reel-v" class="val">—</div></div>
-        </div>
-        <div class="grid cols-3" style="margin-top:8px;">
-          <div class="metric"><div class="name">Post (reach)</div><div id="ct-post-r" class="val">—</div></div>
-          <div class="metric"><div class="name">Story (reach)</div><div id="ct-story-r" class="val">—</div></div>
-          <div class="metric"><div class="name">Reel (reach)</div><div id="ct-reel-r" class="val">—</div></div>
-        </div>
-        <div class="note">Cells are empty when value is zero or unavailable.</div>
-      </div>
-    </section>
-
-    <!-- BASE -->
-    <section id="base" class="section">
-      <div class="card table-card">
-        <div class="block-title" style="padding:16px 16px 0;">Base (daily)</div>
-        <div class="table-wrap">
-          <table id="tbl-base">
-            <thead><tr>
-              <th>Date</th><th>Reach</th><th>Views</th><th>Profile visits</th><th>Interactions</th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="note" style="padding:0 16px 16px;">Rows are filtered by selected range.</div>
-      </div>
-    </section>
-
-    <!-- VIEWERS -->
-    <section id="viewers" class="section">
-      <div class="card table-card">
-        <div class="block-title" style="padding:16px 16px 0;">Viewers (daily)</div>
-        <div class="table-wrap">
-          <table id="tbl-viewers">
-            <thead><tr>
-              <th>Date</th><th>Profile visits</th>
-              <th>Reach NF</th><th>Views NF</th>
-              <th>Reach F</th><th>Views F</th>
-              <th>Ratio NF</th><th>Ratio F</th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- CONTENT -->
-    <section id="content" class="section">
-      <div class="card table-card">
-        <div class="block-title" style="padding:16px 16px 0;">Content (daily)</div>
-        <div class="table-wrap">
-          <table id="tbl-content">
-            <thead><tr>
-              <th>Date</th><th>Profile visits</th>
-              <th>Views Story</th><th>Views Post</th><th>Views Reel</th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- INTERACTIONS -->
-    <section id="interactions" class="section">
-      <div class="card table-card">
-        <div class="block-title" style="padding:16px 16px 0;">Interactions (daily)</div>
-        <div class="table-wrap">
-          <table id="tbl-interactions">
-            <thead><tr>
-              <th>Date</th><th>Profile visits</th>
-              <th>Likes</th><th>Comments</th><th>Saves</th><th>Shares</th><th>Replies</th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
   </div>
 
-  <script>
-  const DATA_URL = "data/daily_history.csv";
+  <!-- OVERVIEW -->
+  <section id="overview">
+    <div class="grid">
+      <div class="card kpi" style="grid-column: span 3;"><div class="label">Views</div><div class="value" id="kpiViews">—</div></div>
+      <div class="card kpi" style="grid-column: span 3;"><div class="label">Reach</div><div class="value" id="kpiReach">—</div></div>
+      <div class="card kpi" style="grid-column: span 3;"><div class="label">Profile visits</div><div class="value" id="kpiProfiles">—</div></div>
+      <div class="card kpi" style="grid-column: span 3;"><div class="label">Interactions (total)</div><div class="value" id="kpiInter">—</div></div>
 
-  let rows = [];
-  let byDate = [];
+      <div class="card" id="interBoxCard" style="grid-column: span 12;">
+        <div class="section-title">Interactions breakdown</div>
+        <div class="grid" style="margin-top:8px;">
+          <div class="kpi" style="grid-column: span 2;"><div class="label">Likes</div><div class="value" id="likes"> </div></div>
+          <div class="kpi" style="grid-column: span 2;"><div class="label">Comments</div><div class="value" id="comments"> </div></div>
+          <div class="kpi" style="grid-column: span 2;"><div class="label">Saves</div><div class="value" id="saves"> </div></div>
+          <div class="kpi" style="grid-column: span 2;"><div class="label">Shares</div><div class="value" id="shares"> </div></div>
+          <div class="kpi" style="grid-column: span 2;"><div class="label">Replies</div><div class="value" id="replies"> </div></div>
+        </div>
+      </div>
 
-  const parseNum = v => {
-    if (v === undefined || v === null || v === "") return 0;
-    const n = Number(v); return Number.isFinite(n) ? n : 0;
-  };
-  const fmt = n => (n && isFinite(n) ? n.toLocaleString("en-US") : "");
-  const fmtDate = iso => {
-    const d = new Date(iso.slice(0,10) + "T00:00:00");
-    const opt = {year:'numeric', month:'long', day:'numeric'};
-    return d.toLocaleDateString('en-US', opt);
-  };
-  const dateOnly = iso => iso.slice(0,10);
+      <!-- Followers vs Non-followers (Views) -->
+      <div class="card" style="grid-column: span 6;">
+        <div class="section-title" id="followViewsTitle">Followers vs Non-followers (Views)</div>
+        <div id="followViewsBox" class="note">—</div>
+      </div>
 
-  function showTab(id, el){
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-  }
+      <!-- Followers vs Non-followers (Reach) -->
+      <div class="card" style="grid-column: span 6;">
+        <div class="section-title" id="followReachTitle">Followers vs Non-followers (Reach)</div>
+        <div id="followReachBox" class="note">—</div>
+      </div>
 
-  async function loadCSV(){
-    const res = await fetch(DATA_URL);
-    const txt = await res.text();
-    const [head, ...lines] = txt.trim().split(/\r?\n/);
-    const cols = head.split(',');
-    rows = lines.map(line => {
-      const vals = line.split(',');
-      const o = {};
-      cols.forEach((c,i) => o[c] = vals[i] ?? "");
-      return o;
+      <!-- Views per user by follower type -->
+      <div class="card" style="grid-column: span 6;">
+        <div class="section-title">Views per user (Followers / Non-followers)</div>
+        <div class="grid" id="vpuBox" style="margin-top:6px;"></div>
+      </div>
+
+      <!-- By content type (без выравнивания reach; reach=0 -> пусто) -->
+      <div class="card" style="grid-column: span 6;">
+        <div class="section-title" id="surfaceTitle">By content type</div>
+        <table id="surfaceTbl" style="margin-top:8px;">
+          <thead><tr><th>Type</th><th>Reach</th><th>Views</th><th>Views/Reach</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="note">Per-type reach is non-deduplicated across types and may be suppressed on small cells. Cells with reach=0 are blank.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BASE (daily) -->
+  <section id="base" class="hidden">
+    <div class="section-title">Base (daily)</div>
+    <table id="tblBase"><thead><tr>
+      <th>Date</th><th>Reach</th><th>Views</th><th>Profile visits</th><th>Interactions</th>
+    </tr></thead><tbody></tbody></table>
+    <div class="note">Rows are filtered by selected range.</div>
+  </section>
+
+  <!-- VIEWERS (daily) -->
+  <section id="viewers" class="hidden">
+    <div class="section-title">Viewers (daily)</div>
+    <table id="tblViewers"><thead><tr>
+      <th>Date</th><th>Profile visits</th><th>Reach NF</th><th>Views NF</th><th>Reach F</th><th>Views F</th><th>Ratio NF</th><th>Ratio F</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+
+  <!-- CONTENT (daily) -->
+  <section id="content" class="hidden">
+    <div class="section-title">Content (daily)</div>
+    <table id="tblContent"><thead><tr>
+      <th>Date</th><th>Profile visits</th><th>Views Story</th><th>Views Post</th><th>Views Reel</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+
+  <!-- INTERACTIONS (daily) -->
+  <section id="interactions" class="hidden">
+    <div class="section-title">Interactions (daily)</div>
+    <table id="tblInter"><thead><tr>
+      <th>Date</th><th>Profile visits</th><th>Likes</th><th>Comments</th><th>Saves</th><th>Shares</th><th>Replies</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+
+<script>
+const LIVE_API = "https://insta-live-api.vercel.app/api/insights";
+const DAILY_CSV = "data/daily_history.csv";
+
+const $ = (q) => document.querySelector(q);
+const fmtInt = (n) => (n && n !== 0 ? n.toLocaleString() : "");
+const fmt2 = (n) => (Number.isFinite(n) && n>0 ? n.toFixed(3) : "");
+const iso = (d) => d.toISOString().slice(0,10);
+const daysAgo = (n) => new Date(Date.now() - n*86400000);
+
+function fmtHuman(isoStr){
+  const d = new Date(isoStr + "T00:00:00");
+  const f = new Intl.DateTimeFormat('en-US', {month:'long', day:'numeric', year:'numeric'});
+  return f.format(d);
+}
+function tzOffset(){
+  const m = -new Date().getTimezoneOffset();
+  const s = m >= 0 ? '+' : '-';
+  const hh = String(Math.floor(Math.abs(m)/60)).padStart(2,'0');
+  const mm = String(Math.abs(m)%60).padStart(2,'0');
+  return s + hh + ':' + mm;
+}
+
+// tabs
+const tabs = [
+  ["#tabOverview", "#overview"],
+  ["#tabBase", "#base"],
+  ["#tabViewers", "#viewers"],
+  ["#tabContent", "#content"],
+  ["#tabInteractions", "#interactions"],
+];
+tabs.forEach(([tID, secID])=>{
+  $(tID).onclick = () => {
+    tabs.forEach(([t,s])=>{
+      $(t).classList.toggle("active", t===tID);
+      $(s).classList.toggle("hidden", s!==secID);
     });
-    byDate = rows.map(r => ({
-      date: dateOnly(r.date || ""),
-      reach: parseNum(r.reach),
-      views: parseNum(r.views),
-      profile: parseNum(r.profile_views),
-      interactions: parseNum(r.interactions_total),
-      likes: parseNum(r.likes), comments: parseNum(r.comments), saves: parseNum(r.saves),
-      shares: parseNum(r.shares), replies: parseNum(r.replies),
-      views_nf: parseNum(r.views_nf), reach_nf: parseNum(r.reach_nf),
-      views_f: parseNum(r.views_f), reach_f: parseNum(r.reach_f),
-      v_story: parseNum(r.views_story), v_post: parseNum(r.views_post), v_reel: parseNum(r.views_reel)
-    }));
-    initRange();
-    render();
+  };
+});
+
+// partial badges
+function ensureBadge(hostSel, text, title){
+  const host = $(hostSel); if(!host) return;
+  let b = host.querySelector('.badge-partial');
+  if(!b){ b = document.createElement('span'); b.className = 'badge-partial'; host.appendChild(b); }
+  b.textContent = text || 'partial via fallback';
+  if(title) b.title = title;
+}
+function removeBadge(hostSel){ const host=$(hostSel); if(!host) return; const b=host.querySelector('.badge-partial'); if(b) b.remove(); }
+
+// live
+async function fetchLive(sinceISO, untilISO){
+  const url = `${LIVE_API}?since=${sinceISO}&until=${untilISO}&tz=${encodeURIComponent(tzOffset())}`;
+  const r = await fetch(url, {cache:'no-store'}); if(!r.ok) throw new Error('Live API failed: ' + r.status);
+  return await r.json();
+}
+
+function fillOverview(live){
+  const totals = live?.totals || {};
+  const V = totals.content_views ?? totals.views ?? 0;
+  const R = totals.reach ?? 0;
+
+  // KPIs
+  $('#kpiViews').textContent    = fmtInt(V) || '—';
+  $('#kpiReach').textContent    = fmtInt(R) || '—';
+  $('#kpiProfiles').textContent = fmtInt(totals.profile_views) || '—';
+  $('#kpiInter').textContent    = fmtInt(totals.total_interactions) || '—';
+
+  // Interactions breakdown: скрывать, если total_interactions == 0
+  const showInter = (totals.total_interactions || 0) > 0;
+  $('#interBoxCard').style.display = showInter ? '' : 'none';
+  if(showInter){
+    $('#likes').textContent    = fmtInt(totals.likes) || '';
+    $('#comments').textContent = fmtInt(totals.comments) || '';
+    $('#saves').textContent    = fmtInt(totals.saves) || '';
+    $('#shares').textContent   = fmtInt(totals.shares) || '';
+    $('#replies').textContent  = fmtInt(totals.replies) || '';
   }
 
-  function initRange(){
-    if (!byDate.length) return;
-    const min = byDate[0].date;
-    const max = byDate[byDate.length-1].date;
+  // Followers vs Non-followers
+  const follow = live?.follow || {};
+  const f  = follow.FOLLOWER     || {views:0, reach:0};
+  const nf = follow.NON_FOLLOWER || {views:0, reach:0};
 
-    const end = new Date(max);
-    const start = new Date(end); start.setDate(start.getDate()-27);
+  // Views: скрывать сегмент, если 0
+  const partsViews = [];
+  if((f.views||0)>0){ partsViews.push(`<div class="kpi" style="grid-column:span 6;"><span class="pill">Followers</span><div class="note">${fmtInt(f.views)} (${(V>0?(f.views/V*100):0).toFixed(1)}%)</div></div>`); }
+  if((nf.views||0)>0){ partsViews.push(`<div class="kpi" style="grid-column:span 6;"><span class="pill">Non-followers</span><div class="note">${fmtInt(nf.views)} (${(V>0?(nf.views/V*100):0).toFixed(1)}%)</div></div>`); }
+  $('#followViewsBox').innerHTML = partsViews.length ? `<div class="grid">${partsViews.join("")}</div>` : '—';
 
-    const f = document.getElementById('from');
-    const t = document.getElementById('to');
-    f.min = min; f.max = max; t.min = min; t.max = max;
+  // Reach: скрывать сегмент, если 0
+  const partsReach = [];
+  if((f.reach||0)>0){ partsReach.push(`<div class="kpi" style="grid-column:span 6;"><span class="pill">Followers</span><div class="note">${fmtInt(f.reach)} (${(R>0?(f.reach/R*100):0).toFixed(1)}%)</div></div>`); }
+  if((nf.reach||0)>0){ partsReach.push(`<div class="kpi" style="grid-column:span 6;"><span class="pill">Non-followers</span><div class="note">${fmtInt(nf.reach)} (${(R>0?(nf.reach/R*100):0).toFixed(1)}%)</div></div>`); }
+  $('#followReachBox').innerHTML = partsReach.length ? `<div class="grid">${partsReach.join("")}</div>` : '—';
 
-    const toISO = d => d.toISOString().slice(0,10);
-    f.value = toISO(start);
-    t.value = toISO(end);
+  // Views per user (views/reach) по типам подписчиков, скрывать, если 0/NaN
+  const vpu = [];
+  const vprF  = (f.reach>0)  ? (f.views / f.reach) : 0;
+  const vprNF = (nf.reach>0) ? (nf.views / nf.reach) : 0;
+  if(vprF > 0){ vpu.push(`<div class="kpi"><div class="pill">Followers</div><div class="value">${fmt2(vprF)}</div></div>`); }
+  if(vprNF> 0){ vpu.push(`<div class="kpi"><div class="pill">Non-followers</div><div class="value">${fmt2(vprNF)}</div></div>`); }
+  $('#vpuBox').innerHTML = vpu.join("") || '—';
+
+  // By content type: без выравнивания reach; reach=0 -> пусто; ratio показываем только если reach>0
+  const surface = live?.surface || {};
+  const tbody = $('#surfaceTbl tbody'); tbody.innerHTML = '';
+  const rows = Object.entries(surface)
+    .map(([k,v]) => ({type:k, reach:Number(v.reach||0), views:Number(v.views||0), ratio:(Number(v.reach||0)>0 ? (Number(v.views||0)/Number(v.reach||0)) : null)}))
+    .filter(r => (r.reach>0 || r.views>0))
+    .sort((a,b) => b.views - a.views);
+
+  for(const r of rows){
+    const tr = document.createElement('tr');
+    const reachCell = (r.reach>0) ? fmtInt(r.reach) : "";
+    const ratioCell = (r.ratio && r.ratio>0) ? fmt2(r.ratio) : "";
+    tr.innerHTML = `<td>${r.type}</td><td>${reachCell}</td><td>${fmtInt(r.views)}</td><td>${ratioCell}</td>`;
+    tbody.appendChild(tr);
   }
 
-  function apply(ev){ ev.preventDefault(); render(); }
+  // partial badges
+  const fr = live?.meta?.ratios?.follow;   // {views,reach,partial}
+  const sr = live?.meta?.ratios?.surface;  // {views,reach,partial,legacy}
 
-  function filterRange(){
-    const f = document.getElementById('from').value || byDate[0]?.date;
-    const t = document.getElementById('to').value   || byDate.at(-1)?.date;
-    const from = new Date(f + "T00:00:00");
-    const to   = new Date(t + "T23:59:59");
-    return byDate.filter(r => {
-      const d = new Date(r.date + "T12:00:00");
-      return d >= from && d <= to;
+  if(fr?.partial){
+    const coverage = Math.round(Math.min((fr.views||0),(fr.reach||0))*100);
+    const title = `Partial via fallback: followers breakdown incomplete (privacy thresholds / API gaps). Coverage ≈ ${coverage}%.`;
+    // для двух заголовков:
+    ensureBadge('#followViewsTitle', 'partial via fallback', title);
+    ensureBadge('#followReachTitle', 'partial via fallback', title);
+  } else {
+    removeBadge('#followViewsTitle'); removeBadge('#followReachTitle');
+  }
+
+  if(sr?.partial){
+    const coverage = Math.round(Math.min((sr.views||0),(sr.reach||0))*100);
+    let title = `Partial via fallback: content-type breakdown incomplete. Coverage ≈ ${coverage}%.`;
+    if(sr?.legacy) title = `Partial via fallback (legacy surface): media_product_type unavailable; legacy surface used. Coverage ≈ ${coverage}%.`;
+    ensureBadge('#surfaceTitle', 'partial via fallback', title);
+  } else {
+    removeBadge('#surfaceTitle');
+  }
+}
+
+// DAILY CSV helpers
+async function loadCSV(url){
+  const r = await fetch(url, {cache:'no-store'}); if(!r.ok) return [];
+  const txt = await r.text();
+  const lines = txt.trim().split(/\r?\n/);
+  if(lines.length<=1) return [];
+  const headers = lines[0].split(',').map(s=>s.trim());
+  const idx = (name) => headers.findIndex(h => h.toLowerCase()===name.toLowerCase());
+  const ix = {
+    date: idx('date'),
+    views: idx('views'), reach: idx('reach'), profile: idx('profile_views'), inter: (idx('interactions_total')>=0?idx('interactions_total'):idx('total_interactions')),
+    likes: idx('likes'), comments: idx('comments'), saves: idx('saves'), shares: idx('shares'), replies: idx('replies'),
+    views_nf: idx('views_nf'), reach_nf: idx('reach_nf'), views_f: idx('views_f'), reach_f: idx('reach_f'),
+    views_story: idx('views_story'), views_post: idx('views_post'), views_reel: idx('views_reel'),
+  };
+  const out = [];
+  for(let i=1;i<lines.length;i++){
+    const c = lines[i].split(',');
+    if(!c[ix.date]) continue;
+    const getN = (j)=> (j>=0 ? Number(c[j]||0) : 0);
+    out.push({
+      date: c[ix.date].slice(0,10),
+      views: getN(ix.views),
+      reach: getN(ix.reach),
+      profile: getN(ix.profile),
+      inter: getN(ix.inter),
+      likes: getN(ix.likes),
+      comments: getN(ix.comments),
+      saves: getN(ix.saves),
+      shares: getN(ix.shares),
+      replies: getN(ix.replies),
+      views_nf: getN(ix.views_nf),
+      reach_nf: getN(ix.reach_nf),
+      views_f: getN(ix.views_f),
+      reach_f: getN(ix.reach_f),
+      views_story: getN(ix.views_story),
+      views_post: getN(ix.views_post),
+      views_reel: getN(ix.views_reel),
     });
   }
+  return out;
+}
 
-  function renderOverview(list){
-    const sum = k => list.reduce((a,r)=> a + (r[k]||0), 0);
+function inRange(dISO, fromISO, toISO){
+  const t = new Date(dISO+'T12:00:00').getTime();
+  return t >= new Date(fromISO+'T00:00:00').getTime() && t <= new Date(toISO+'T23:59:59').getTime();
+}
 
-    const V = sum('views'), R = sum('reach'), P = sum('profile'), I = sum('interactions');
-    const L = sum('likes'), C = sum('comments'), S = sum('saves'), Sh = sum('shares'), Rp = sum('replies');
+function fillBase(rows, fromISO, toISO){
+  const tb = document.querySelector('#tblBase tbody'); tb.innerHTML = '';
+  rows.filter(r=>inRange(r.date, fromISO, toISO)).sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${fmtHuman(r.date)}</td>
+      <td>${fmtInt(r.reach)}</td>
+      <td>${fmtInt(r.views)}</td>
+      <td>${fmtInt(r.profile)}</td>
+      <td>${fmtInt(r.inter)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function fillViewers(rows, fromISO, toISO){
+  const tb = document.querySelector('#tblViewers tbody'); tb.innerHTML = '';
+  rows.filter(r=>inRange(r.date, fromISO, toISO)).sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
+    const ratioNF = (r.reach_nf>0) ? (r.views_nf/r.reach_nf) : 0;
+    const ratioF  = (r.reach_f>0)  ? (r.views_f /r.reach_f)  : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${fmtHuman(r.date)}</td>
+      <td>${fmtInt(r.profile)}</td>
+      <td>${fmtInt(r.reach_nf)}</td>
+      <td>${fmtInt(r.views_nf)}</td>
+      <td>${fmtInt(r.reach_f)}</td>
+      <td>${fmtInt(r.views_f)}</td>
+      <td>${fmt2(ratioNF)}</td>
+      <td>${fmt2(ratioF)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function fillContent(rows, fromISO, toISO){
+  const tb = document.querySelector('#tblContent tbody'); tb.innerHTML = '';
+  rows.filter(r=>inRange(r.date, fromISO, toISO)).sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${fmtHuman(r.date)}</td>
+      <td>${fmtInt(r.profile)}</td>
+      <td>${fmtInt(r.views_story)}</td>
+      <td>${fmtInt(r.views_post)}</td>
+      <td>${fmtInt(r.views_reel)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function fillInter(rows, fromISO, toISO){
+  const tb = document.querySelector('#tblInter tbody'); tb.innerHTML = '';
+  rows.filter(r=>inRange(r.date, fromISO, toISO)).sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${fmtHuman(r.date)}</td>
+      <td>${fmtInt(r.profile)}</td>
+      <td>${fmtInt(r.likes)}</td>
+      <td>${fmtInt(r.comments)}</td>
+      <td>${fmtInt(r.saves)}</td>
+      <td>${fmtInt(r.shares)}</td>
+      <td>${fmtInt(r.replies)}</td>`;
+    tb.appendChild(tr);
+  });
+}
 
-    document.getElementById('ov-views').textContent = fmt(V);
-    document.getElementById('ov-reach').textContent = fmt(R);
-    document.getElementById('ov-profile').textContent = fmt(P);
-    document.getElementById('ov-int').textContent = fmt(I);
+let cachedDaily = null;
 
-    const intWrap = document.getElementById('ov-int-break');
-    if (I === 0) intWrap.style.display = 'none'; else {
-      intWrap.style.display = '';
-      document.getElementById('ov-likes').textContent = fmt(L);
-      document.getElementById('ov-comments').textContent = fmt(C);
-      document.getElementById('ov-saves').textContent = fmt(S);
-      document.getElementById('ov-shares').textContent = fmt(Sh);
-      document.getElementById('ov-replies').textContent = fmt(Rp);
-    }
-
-    const VF = sum('views_f'), RF = sum('reach_f');
-    const VNF = sum('views_nf'), RNF = sum('reach_nf');
-
-    const vpuF  = (RF>0) ? (VF/RF) : 0;
-    const vpuNF = (RNF>0) ? (VNF/RNF) : 0;
-
-    document.getElementById('ov-vpu-f').textContent  = fmt(vpuF && Number(vpuF.toFixed(3)));
-    document.getElementById('ov-vpu-nf').textContent = fmt(vpuNF && Number(vpuNF.toFixed(3)));
-
-    const put = (id,val)=> document.getElementById(id).textContent = fmt(val);
-    put('ov-fv',  VF || "");
-    put('ov-nfv', VNF || "");
-    put('ov-fr',  RF || "");
-    put('ov-nfr', RNF || "");
-
-    const PV = sum('v_post'), SV = sum('v_story'), RV = sum('v_reel');
-    put('ct-post-v', PV || "");
-    put('ct-story-v', SV || "");
-    put('ct-reel-v', RV || "");
-    put('ct-post-r', ""); put('ct-story-r', ""); put('ct-reel-r', "");
+async function applyRange(fromISO, toISO){
+  // Overview (live)
+  try {
+    const live = await fetchLive(fromISO, toISO);
+    fillOverview(live);
+  } catch(e){
+    console.error(e);
+    alert('Live API error: ' + e.message);
   }
-
-  function buildRow(cells){
-    const td = cells.map(v => `<td>${v ?? ""}</td>`).join("");
-    return `<tr>${td}</tr>`;
+  // Daily tabs
+  try {
+    if(!cachedDaily) cachedDaily = await loadCSV(DAILY_CSV);
+    fillBase(cachedDaily, fromISO, toISO);
+    fillViewers(cachedDaily, fromISO, toISO);
+    fillContent(cachedDaily, fromISO, toISO);
+    fillInter(cachedDaily, fromISO, toISO);
+  } catch(e){
+    console.error(e);
   }
+}
 
-  function renderTables(list){
-    // Base
-    const tb1 = document.querySelector("#tbl-base tbody");
-    tb1.innerHTML = list.map(r => buildRow([
-      fmtDate(r.date), fmt(r.reach), fmt(r.views), fmt(r.profile), fmt(r.interactions)
-    ])).join("");
+function initDefaults(){
+  const from = daysAgo(28), to = daysAgo(1);
+  document.getElementById('fromInput').value = iso(from);
+  document.getElementById('toInput').value = iso(to);
+  applyRange(iso(from), iso(to));
+}
+document.getElementById('rangeForm').addEventListener('submit', (ev)=>{
+  ev.preventDefault();
+  const fromISO = document.getElementById('fromInput').value;
+  const toISO   = document.getElementById('toInput').value;
+  if(!fromISO || !toISO) return;
+  applyRange(fromISO, toISO);
+});
+initDefaults();
+</script>
 
-    // Viewers
-    const tb2 = document.querySelector("#tbl-viewers tbody");
-    tb2.innerHTML = list.map(r => {
-      const ratioNF = (r.reach_nf>0) ? Number((r.views_nf/r.reach_nf).toFixed(3)) : 0;
-      const ratioF  = (r.reach_f>0)  ? Number((r.views_f /r.reach_f ).toFixed(3)) : 0;
-      return buildRow([
-        fmtDate(r.date), fmt(r.profile),
-        fmt(r.reach_nf)||"", fmt(r.views_nf)||"",
-        fmt(r.reach_f)||"",  fmt(r.views_f)||"",
-        fmt(ratioNF)||"", fmt(ratioF)||""
-      ]);
-    }).join("");
-
-    // Content
-    const tb3 = document.querySelector("#tbl-content tbody");
-    tb3.innerHTML = list.map(r => buildRow([
-      fmtDate(r.date), fmt(r.profile),
-      fmt(r.v_story)||"", fmt(r.v_post)||"", fmt(r.v_reel)||""
-    ])).join("");
-
-    // Interactions
-    const tb4 = document.querySelector("#tbl-interactions tbody");
-    tb4.innerHTML = list.map(r => buildRow([
-      fmtDate(r.date), fmt(r.profile),
-      fmt(r.likes)||"", fmt(r.comments)||"", fmt(r.saves)||"", fmt(r.shares)||"", fmt(r.replies)||""
-    ])).join("");
-  }
-
-  function render(){
-    const list = filterRange();
-    renderOverview(list);
-    renderTables(list);
-  }
-
-  loadCSV();
-  </script>
 </body>
 </html>
