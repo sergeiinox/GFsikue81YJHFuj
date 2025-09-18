@@ -13,7 +13,7 @@
   .window-note { color:var(--muted); font-size:12px; margin-bottom:18px; }
   .card { background:var(--card); border:1px solid var(--card); border-radius:16px; padding:12px 16px; }
   .tabs { display:flex; gap:8px; margin:16px 0 4px; flex-wrap:wrap; }
-  .tab { padding:4px 8px; border:1px solid var(--border); border-radius:999px; cursor:pointer; user-select:none; }
+  .tab { padding:6px 12px; border:1px solid var(--border); border-radius:999px; cursor:pointer; user-select:none; }
   .tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
   .hidden { display:none; }
   .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:8px; }
@@ -27,9 +27,9 @@
   .pill { display:inline-block; font-size:14px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:#fff; }
   .badge-partial { display:inline-flex; align-items:center; gap:6px; font-size:11px; line-height:1; padding:4px 8px; border-radius:999px; background:#FEF3C7; color:#92400E; border:1px solid #FEF3C7; cursor:help; }
   .note { color:var(--muted); font-size:12px; margin-top:8px; }
-  .date-range { display:flex; gap:8px; margin:0 0; flex-wrap:wrap; align-content:flex-end}
-  input[type="date"] { padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:#fff; }
-  button.submit { padding:4px 8px; border-radius:8px; border:1px solid var(--border); background:var(--accent); color:#fff; }
+  .date-range { display:flex; gap:8px; margin:0 0; flex-wrap:wrap; align-items:flex-end}
+  input[type="date"] { padding:8px 10px; border:1px solid var(--border); border-radius:12px; background:#fff; }
+  button.submit { padding:6px 12px; border-radius:12px; border:1px solid var(--border); background:var(--accent); color:#fff; }
 </style>
 </head>
 <body>
@@ -86,13 +86,13 @@
 
       <!-- Views per user by follower type -->
       <div class="card" style="grid-column: span 6;">
-        <div class="section-title">Views per user (Followers / Non-followers)</div>
-        <div class="grid" id="vpuBox" style="margin-top:6px;"></div>
+        <div class="section-title">Views per user</div>
+        <div id="vpuBox" style="margin-top:0;"></div>
       </div>
 
       <!-- By content type (без выравнивания reach; reach=0 -> пусто) -->
       <div class="card" style="grid-column: span 6;">
-        <div class="section-title" id="surfaceTitle">By content type</div>
+        <div class="section-title" id="surfaceTitle">Content</div>
         <table id="surfaceTbl" style="margin-top:8px;">
           <thead><tr><th>Type</th><th>Reach</th><th>Views</th><th>Views/Reach</th></tr></thead>
           <tbody></tbody>
